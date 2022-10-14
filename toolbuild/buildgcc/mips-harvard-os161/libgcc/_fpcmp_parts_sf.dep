@@ -1,0 +1,58 @@
+_fpcmp_parts_sf.o: ../../../gcc-4.8.3+os161-2.1/libgcc/fp-bit.c \
+ ../.././gcc/tconfig.h ../.././gcc/auto-host.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../include/ansidecl.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/coretypes.h ../.././gcc/tm.h \
+ ../.././gcc/options.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/flag-types.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/mips/mips-opts.h \
+ ../.././gcc/insn-constants.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/elfos.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/vxworks-dummy.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/mips/mips.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/mips/elf.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/os161.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/os161-elf.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/mips/os161.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/initfini-array.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/defaults.h libgcc_tm.h \
+ ../../../gcc-4.8.3+os161-2.1/libgcc/fp-bit.h
+
+../.././gcc/tconfig.h:
+
+../.././gcc/auto-host.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../include/ansidecl.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/coretypes.h:
+
+../.././gcc/tm.h:
+
+../.././gcc/options.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/flag-types.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/mips/mips-opts.h:
+
+../.././gcc/insn-constants.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/elfos.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/vxworks-dummy.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/mips/mips.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/mips/elf.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/os161.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/os161-elf.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/mips/os161.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/config/initfini-array.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/../gcc/defaults.h:
+
+libgcc_tm.h:
+
+../../../gcc-4.8.3+os161-2.1/libgcc/fp-bit.h:
