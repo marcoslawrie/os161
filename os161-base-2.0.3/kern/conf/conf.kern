@@ -376,9 +376,13 @@ file      vfs/devnull.c
 # calls assignment.)
 #
 
+defoption syscalls
+
 file      syscall/loadelf.c
 file      syscall/runprogram.c
 file      syscall/time_syscalls.c
+optfile syscalls syscall/file_syscalls.c
+optfile syscalls syscall/proc_syscalls.c
 
 #
 # Startup and initialization
