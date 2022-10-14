@@ -51,7 +51,6 @@
 #include <version.h>
 #include "autoconf.h"  // for pseudoconfig
 
-
 /*
  * These two pieces of data are maintained by the makefiles and build system.
  * buildconfig is the name of the config file the kernel was configured with.
@@ -200,7 +199,6 @@ sys_reboot(int code)
 	panic("reboot operation failed\n");
 	return 0;
 }
-
 /*
  * Kernel main. Boot up, then fork the menu thread; wait for a reboot
  * request, and then shut down.
