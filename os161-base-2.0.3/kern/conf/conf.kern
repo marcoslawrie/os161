@@ -346,6 +346,8 @@ file      vm/coremap.c
 file      vm/vmstats.c
 
 optofffile dumbvm   vm/addrspace.c
+optofffile dumbvm   vm/pt.c
+optofffile dumbvm   vm/vm_tlb.c
 
 #
 # Network

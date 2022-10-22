@@ -36,6 +36,7 @@
 
 
 #include <vm.h>
+#include <types.h>
 #include "opt-dumbvm.h"
 #include "opt-pt.h"
 
