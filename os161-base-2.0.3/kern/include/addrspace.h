@@ -37,6 +37,7 @@
 
 #include <vm.h>
 #include "opt-dumbvm.h"
+#include "opt-pt.h"
 
 struct vnode;
 
@@ -57,7 +58,24 @@ struct addrspace {
         paddr_t as_pbase2;
         size_t as_npages2;
         paddr_t as_stackpbase;
-#else
+#elif OPT_PT
+                /*Code page table*/
+        /*Physical address = code_pt[virtual_page] + base
+        and virtual_page = generated_address/page_size;
+        */
+        vaddr_t code_vbase; 
+        paddr_t * code_pt; //Physical page table for code segnement
+        size_t npages_code; //Number of pages of code segment mapped in page table
+        
+        /*Data page table*/
+        vaddr_t data_vbase;
+        paddr_t * data_pt;
+        size_t npages_data;
+
+        /*Stack page table*/
+        paddr_t *stack_pt;
+
+#else 
         /* Put stuff here for your VM system */
         vaddr_t as_vbase1;
         paddr_t as_pbase1;
@@ -124,7 +142,8 @@ int               as_define_region(struct addrspace *as,
 int               as_prepare_load(struct addrspace *as);
 int               as_complete_load(struct addrspace *as);
 int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
-
+void              dumbvm_can_sleep(void);
+//static void as_zero_region(paddr_t paddr, unsigned npages);
 
 /*
  * Functions in loadelf.c

@@ -32,7 +32,14 @@
 #include <lib.h>
 #include <addrspace.h>
 #include <vm.h>
+#include <spl.h>
+#include <cpu.h>
+#include <spinlock.h>
 #include <proc.h>
+#include <current.h>
+#include <mips/tlb.h>
+
+#include "coremap.h"
 
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
@@ -40,70 +47,109 @@
  * used. The cheesy hack versions in dumbvm.c are used instead.
  */
 
-struct addrspace *
-as_create(void)
-{
-	struct addrspace *as;
+#define DUMBVM_STACKPAGES    18
 
-	as = kmalloc(sizeof(struct addrspace));
-	if (as == NULL) {
+struct addrspace * as_create(void)
+{
+	struct addrspace *as = kmalloc(sizeof(struct addrspace));
+	if (as==NULL) {
 		return NULL;
 	}
 
-	/*
-	 * Initialize as needed.
-	 */
+	as->code_vbase = 0;
+	as->code_pt = NULL; //Null pointer
+	as->npages_code = 0;
+	
+	as->data_vbase = 0;
+	as->data_pt = NULL;
+	as->npages_data = 0;
+	
+	as->stack_pt = NULL;
+	
 
 	return as;
 }
-
-int
-as_copy(struct addrspace *old, struct addrspace **ret)
+void dumbvm_can_sleep(void)
 {
-	struct addrspace *newas;
+	if (CURCPU_EXISTS()) {
+		/* must not hold spinlocks */
+		KASSERT(curcpu->c_spinlocks == 0);
 
-	newas = as_create();
-	if (newas==NULL) {
+		/* must not be in an interrupt handler */
+		KASSERT(curthread->t_in_interrupt == 0);
+	}
+}
+#if 0
+int as_copy(struct addrspace *old, struct addrspace **ret)
+{
+	struct addrspace *new;
+
+	dumbvm_can_sleep();
+
+	new = as_create();
+	if (new==NULL) {
 		return ENOMEM;
 	}
 
-	/*
-	 * Write this.
-	 */
+	new->as_vbase1 = old->as_vbase1;
+	new->as_npages1 = old->as_npages1;
+	new->as_vbase2 = old->as_vbase2;
+	new->as_npages2 = old->as_npages2;
 
-	(void)old;
+	/* (Mis)use as_prepare_load to allocate some physical memory. */
+	if (as_prepare_load(new)) {
+		as_destroy(new);
+		return ENOMEM;
+	}
 
-	*ret = newas;
+	KASSERT(new->as_pbase1 != 0);
+	KASSERT(new->as_pbase2 != 0);
+	KASSERT(new->as_stackpbase != 0);
+
+	memmove((void *)PADDR_TO_KVADDR(new->as_pbase1),
+		(const void *)PADDR_TO_KVADDR(old->as_pbase1),
+		old->as_npages1*PAGE_SIZE);
+
+	memmove((void *)PADDR_TO_KVADDR(new->as_pbase2),
+		(const void *)PADDR_TO_KVADDR(old->as_pbase2),
+		old->as_npages2*PAGE_SIZE);
+
+	memmove((void *)PADDR_TO_KVADDR(new->as_stackpbase),
+		(const void *)PADDR_TO_KVADDR(old->as_stackpbase),
+		DUMBVM_STACKPAGES*PAGE_SIZE);
+
+	*ret = new;
 	return 0;
 }
+#endif
 
-void
-as_destroy(struct addrspace *as)
-{
-	/*
-	 * Clean up as needed.
-	 */
-
-	kfree(as);
+void as_destroy(struct addrspace *as){
+  dumbvm_can_sleep();
+  freeppages(*as->code_pt, as->npages_code);
+  freeppages(*as->data_pt, as->npages_data);
+  freeppages(as->stack_pt[0], DUMBVM_STACKPAGES);
+  kfree(as);
 }
 
 void
 as_activate(void)
 {
+	int i, spl;
 	struct addrspace *as;
 
 	as = proc_getas();
 	if (as == NULL) {
-		/*
-		 * Kernel thread without an address space; leave the
-		 * prior address space in place.
-		 */
 		return;
 	}
 
-	/*
-	 * Write this.
-	 */
+	/* Disable interrupts on this CPU while frobbing the TLB. */
+	spl = splhigh();
+
+	for (i=0; i<NUM_TLB; i++) {
+		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+	}
+
+	splx(spl);
 }
 
 void
@@ -126,57 +172,114 @@ as_deactivate(void)
  * moment, these are ignored. When you write the VM system, you may
  * want to implement them.
  */
-int
-as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
+int as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 		 int readable, int writeable, int executable)
 {
-	/*
-	 * Write this.
-	 */
+	size_t npages;
 
-	(void)as;
-	(void)vaddr;
-	(void)memsize;
+	dumbvm_can_sleep();
+
+	/* Align the region. First, the base... */
+	sz += vaddr & ~(vaddr_t)PAGE_FRAME;
+	vaddr &= PAGE_FRAME;
+
+	/* ...and now the length. */
+	sz = (sz + PAGE_SIZE - 1) & PAGE_FRAME;
+
+	npages = sz / PAGE_SIZE;
+
+	/* We don't use these - all pages are read-write */
 	(void)readable;
 	(void)writeable;
 	(void)executable;
+
+	if (as->code_vbase == 0) {
+		as->code_vbase = vaddr;
+		as->npages_code = npages;
+		as->code_pt = kmalloc(sizeof(uint32_t));
+		*as->code_pt = 0;
+		return 0;
+	}
+
+	if (as->data_vbase == 0) {
+		as->data_vbase = vaddr;
+		as->npages_data = npages;
+		as->data_pt = kmalloc(sizeof(uint32_t));
+		*as->data_pt = 0;
+		return 0;
+	}
+	
+
+	/*
+	 * Support for more than two regions is not available.
+	 */
+	kprintf("dumbvm: Warning: too many regions\n");
 	return ENOSYS;
 }
 
-int
-as_prepare_load(struct addrspace *as)
+static void as_zero_region(paddr_t paddr, unsigned npages)
 {
-	/*
-	 * Write this.
-	 */
+	bzero((void *)PADDR_TO_KVADDR(paddr), npages * PAGE_SIZE);
+}
 
+
+
+int as_prepare_load(struct addrspace *as)
+{
+	KASSERT(*as->code_pt == 0);
+	KASSERT(*as->data_pt == 0);
+	KASSERT(*as->stack_pt == 0);
+
+	dumbvm_can_sleep();
+	/*Allocating all code pages*/
+	//Left commented for later implementation
+    /*for(int i = 0; i < as->npages_code; i++ ) {
+		as->code_pt[i] = getppages(1);
+	}
+	
+	for(int i = 0; i < as->npages_data; i++ ) {
+		as->data_pt[i] = getppages(1);
+	}
+	for(int i = 0; i< DUMBVM_STACKPAGES; i++) {
+
+	}*/
+	*as->code_pt = getppages(as->npages_code);
+	if (*as->code_pt == 0) {
+		return ENOMEM;
+	}
+
+	*as->data_pt = getppages(as->npages_data);
+	if (*as->data_pt == 0) {
+		return ENOMEM;
+	}
+
+	*as->stack_pt = getppages(DUMBVM_STACKPAGES);
+	if (*as->stack_pt == 0) {
+		return ENOMEM;
+	}
+
+	as_zero_region(*as->code_pt, as->npages_code);
+	as_zero_region(*as->data_pt, as->npages_data);
+	as_zero_region(*as->stack_pt, DUMBVM_STACKPAGES);
+
+	return 0;
+}
+
+int as_complete_load(struct addrspace *as)
+{
+	dumbvm_can_sleep();
 	(void)as;
 	return 0;
 }
 
-int
-as_complete_load(struct addrspace *as)
+int as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 {
-	/*
-	 * Write this.
-	 */
+	as->stack_pt    = kmalloc(sizeof(uint32_t));
+	*as->stack_pt    = 0;
+	KASSERT(as->stack_pt != 0);
 
-	(void)as;
-	return 0;
-}
-
-int
-as_define_stack(struct addrspace *as, vaddr_t *stackptr)
-{
-	/*
-	 * Write this.
-	 */
-
-	(void)as;
-
-	/* Initial user-level stack pointer */
 	*stackptr = USERSTACK;
-
 	return 0;
 }
+
 
