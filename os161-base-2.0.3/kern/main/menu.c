@@ -503,7 +503,13 @@ cmd_memstats(int nargs, char **args)
 	return 0;
 
 }
-
+static int cmd_vmstats(int nargs, char **args)
+{
+	(void)nargs;
+	(void)args;
+	print_vm_status();
+	return 0;
+}
 ////////////////////////////////////////
 //
 // Menus.
@@ -611,7 +617,8 @@ static const char *mainmenu[] = {
 	"[kh] Kernel heap stats              ",
 	"[khgen] Next kernel heap generation ",
 	"[khdump] Dump kernel heap           ",
-	"[mem] Print memory status           ",
+	"[mem] Print memory stats            ",
+	"[vm] Print virtual memory stats     ",
 	"[q] Quit and shut down              ",
 	NULL
 };
@@ -664,6 +671,7 @@ static struct {
 	{ "khgen",      cmd_kheapgeneration },
 	{ "khdump",     cmd_kheapdump },
 	{ "mem",        cmd_memstats },
+	{ "vm",         cmd_vmstats },
 
 	/* base system tests */
 	{ "at",		arraytest },

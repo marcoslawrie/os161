@@ -13,6 +13,7 @@
 #include <coremap.h>
 #include "pt.h"
 #include "vm_tlb.h"
+#include <vmstats.h>
 
 
 
@@ -89,6 +90,9 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 		if (elo & TLBLO_VALID) {
 			continue;
 		}
+		increment_TLB_faults();
+		increment_TLB_faults_with_free();
+
 		ehi = faultaddress;
 		elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
 		DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);

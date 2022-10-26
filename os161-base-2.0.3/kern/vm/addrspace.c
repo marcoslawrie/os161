@@ -40,7 +40,7 @@
 #include <mips/tlb.h>
 
 #include "coremap.h"
-
+#include <vmstats.h>
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
  * assignment, this file is not compiled or linked or in any way
@@ -155,7 +155,7 @@ void as_activate(void)
 	for (i=0; i<NUM_TLB; i++) {
 		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
 	}
-
+	increment_TLB_invalidations();
 	splx(spl);
 }
 
