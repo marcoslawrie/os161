@@ -20,8 +20,8 @@
 int vm_fault(int faulttype, vaddr_t faultaddress){
 	
 	paddr_t paddr;
-	int i;
-	uint32_t ehi, elo;
+	int tlb_entry_index;
+	//uint32_t ehi, elo;
 	struct addrspace *as;
 	int spl;
 
@@ -84,14 +84,21 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 
 	/* Disable interrupts on this CPU while frobbing the TLB. */
 	spl = splhigh();
-
-	for (i=0; i<NUM_TLB; i++) {
+	increment_TLB_faults();
+	tlb_entry_index = get_free_TLB_entry();
+	if(tlb_entry_index >= 0) {
+		increment_TLB_faults_with_free();
+		update_TLB(faultaddress,paddr,tlb_entry_index);
+		splx(spl);
+		return 0;
+	}
+	/*for (i=0; i<NUM_TLB; i++) {
 		tlb_read(&ehi, &elo, i);
 		if (elo & TLBLO_VALID) {
 			continue;
 		}
-		increment_TLB_faults();
-		increment_TLB_faults_with_free();
+		
+		
 
 		ehi = faultaddress;
 		elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
@@ -99,9 +106,45 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 		tlb_write(ehi, elo, i);
 		splx(spl);
 		return 0;
-	}
+	}*/
 
+	//If the program arrives here, it means we need to replace a page in the TLB
+	
+	tlb_entry_index = tlb_get_rr_victim();
+	if(tlb_entry_index >= 0) {
+		increment_TLB_faults_with_repalce();
+		update_TLB(faultaddress,paddr,tlb_entry_index);
+		splx(spl);
+		return 0;
+	}
 	kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
 	splx(spl);
 	return EFAULT;
+}
+int get_free_TLB_entry(){
+	int i;
+	uint32_t paddr,vaddr;
+	for (i=0; i<NUM_TLB; i++) {
+		tlb_read(&vaddr, &paddr, i);
+		if (paddr & TLBLO_VALID) {
+			continue;
+		}
+
+		return i;
+	}
+	return -1;
+	
+}
+
+int tlb_get_rr_victim() {
+	int victim;
+	static unsigned int next_victim = 0;
+	victim = next_victim;
+	next_victim = (next_victim + 1) % NUM_TLB;
+	return victim;
+}
+void update_TLB(uint32_t vaddr,uint32_t paddr,int tlb_entry_index) {
+	
+	paddr = paddr | TLBLO_DIRTY | TLBLO_VALID; //Check if the masks are correct later. Some pages might not be writable 
+	tlb_write(vaddr, paddr, tlb_entry_index);
 }

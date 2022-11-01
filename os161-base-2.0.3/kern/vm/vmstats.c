@@ -82,7 +82,7 @@ void print_mem_stats(){
     for(int i = 0 ; i < nRamFrames ; i ++){
         if(!freeRamFrames[i]) {
             nRamFrames_occupied += allocSize[i];
-            i += allocSize[i];
+            i += allocSize[i]-1;
         }
     }
     kprintf("Total number of frames: %d\n",nRamFrames);
