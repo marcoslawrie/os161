@@ -56,18 +56,21 @@ runprogram(char *progname)
 {
 	struct addrspace *as;
 	struct vnode *v;
+	
 	vaddr_t entrypoint, stackptr;
 	int result;
 
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, 0, &v);
+
 	if (result) {
+		kprintf("couldn't open the file in runprogram");
 		return result;
 	}
 
 	/* We should be a new process. */
 	KASSERT(proc_getas() == NULL);
-
+	
 	/* Create a new address space. */
 	as = as_create();
 	if (as == NULL) {
@@ -78,7 +81,11 @@ runprogram(char *progname)
 	/* Switch to it and activate it. */
 	proc_setas(as);
 	as_activate();
-
+	//kprintf("\n");
+	//char *progname2;
+	//progname2 = proc_getprogname();
+	//kprintf("progname in runprogram1 %u:%s\n",(unsigned int)progname,progname);
+	//kprintf("progname in runprogram2 %u:%s\n",(unsigned int)progname2,progname2);
     /* Define the user stack in the address space */
 	result = as_define_stack(as, &stackptr);
 	if (result) {
@@ -87,15 +94,18 @@ runprogram(char *progname)
 	}
 
 	/* Load the executable. */
+	proc_setprogname(progname);
 	result = load_elf(v, &entrypoint);
+	proc_set_vnode(v);
 	if (result) {
 		/* p_addrspace will go away when curproc is destroyed */
+		kprintf("Error when opening file\n");
 		vfs_close(v);
 		return result;
 	}
 
 	/* Done with the file now. */
-	vfs_close(v);
+	//vfs_close(v);
 
 
 

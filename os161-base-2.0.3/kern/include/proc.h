@@ -37,6 +37,8 @@
  */
 
 #include <spinlock.h>
+#include <elf.h>
+#include <vnode.h>
 
 struct addrspace;
 struct thread;
@@ -71,6 +73,10 @@ struct proc {
 	struct vnode *p_cwd;		/* current working directory */
 
 	/* add more material here as needed */
+	Elf_Phdr ph_code; 
+	Elf_Phdr ph_data;
+	char *prog_name;
+	struct vnode *v;
 };
 
 /* This is the process structure for the kernel and for kernel-only threads. */
@@ -96,6 +102,20 @@ struct addrspace *proc_getas(void);
 
 /* Change the address space of the current process, and return the old one. */
 struct addrspace *proc_setas(struct addrspace *);
+/* Set the program header of the code segment of the current process. */
+void proc_set_phcode(Elf_Phdr ph);
+Elf_Phdr proc_get_phcode(void);
+/* Set the program header of the data segment of the current process. */
+void proc_set_phdata(Elf_Phdr ph);
+Elf_Phdr proc_get_phdata(void);
 
+void proc_setprogname(char * progname);
+
+char *proc_getprogname(void);
+
+void proc_set_vnode(struct vnode *v);
+
+struct vnode * proc_get_vnode(void);
+	
 
 #endif /* _PROC_H_ */

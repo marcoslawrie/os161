@@ -40,3 +40,32 @@ paddr_t getpaddr(vaddr_t faultaddress, struct addrspace *as) {
 	}
     return paddr;
 }
+
+int identify_PT(struct addrspace *as, vaddr_t vaddr) {
+	
+	vaddr_t code_vbase, code_vtop, data_vbase, data_vtop, stackbase, stacktop;
+    
+    //paddr_t paddr;
+    
+    code_vbase = as->code_vbase;
+	code_vtop = code_vbase + as->npages_code * PAGE_SIZE;
+	data_vbase = as->data_vbase;
+	data_vtop = data_vbase + as->npages_data * PAGE_SIZE;
+	stackbase = USERSTACK - VM_STACKPAGES * PAGE_SIZE;
+	stacktop = USERSTACK;
+    
+	if (vaddr >= code_vbase && vaddr < code_vtop) {
+		return IS_CODE_PT;
+	}
+
+	else if (vaddr >= data_vbase && vaddr < data_vtop) {
+		return IS_DATA_PT;
+	}
+	else if (vaddr >= stackbase && vaddr < stacktop) {
+		return IS_STACK_PT;
+	}
+	else {
+		return 0;
+	}
+	
+}

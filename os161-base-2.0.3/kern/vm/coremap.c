@@ -44,7 +44,7 @@ static int isTableActive () {
 void
 vm_bootstrap(void)
 {
-    int i;
+  int i;
 	total_ram_size = (int)ram_getsize();
     nRamFrames = (total_ram_size)/PAGE_SIZE;
 

@@ -5,7 +5,8 @@ vmstats.o: ../../vm/vmstats.c ../../include/types.h \
  ../../include/spl.h ../../include/cpu.h ../../include/spinlock.h \
  ../../include/hangman.h opt-hangman.h includelinks/machine/spinlock.h \
  ../../include/threadlist.h includelinks/machine/vm.h \
- ../../include/proc.h ../../include/current.h \
+ ../../include/proc.h ../../include/elf.h includelinks/machine/elf.h \
+ ../../include/vnode.h ../../include/current.h \
  includelinks/machine/current.h ../../include/thread.h \
  ../../include/array.h includelinks/machine/thread.h \
  ../../include/setjmp.h includelinks/kern/machine/setjmp.h \

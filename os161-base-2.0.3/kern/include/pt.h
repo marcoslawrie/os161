@@ -3,7 +3,15 @@
 
 #include "addrspace.h"
 
-paddr_t getpaddr(vaddr_t faultaddres, struct addrspace *as);
+#define VALID_BIT	0x00000002
 
+
+#define IS_CODE_PT 1
+#define IS_DATA_PT 2
+#define IS_STACK_PT 3
+
+
+paddr_t getpaddr(vaddr_t faultaddres, struct addrspace *as);
+int identify_PT(struct addrspace *as, vaddr_t vaddr);
 
 #endif

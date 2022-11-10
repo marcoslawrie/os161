@@ -140,7 +140,8 @@ int               as_define_region(struct addrspace *as,
                                    int readable,
                                    int writeable,
                                    int executable);
-int               as_prepare_load(struct addrspace *as);
+//int               as_prepare_load(struct addrspace *as);
+int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt);
 int               as_complete_load(struct addrspace *as);
 int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
 void              dumbvm_can_sleep(void);
@@ -154,6 +155,5 @@ void              dumbvm_can_sleep(void);
  */
 
 int load_elf(struct vnode *v, vaddr_t *entrypoint);
-
-
+int load_segment_new(vaddr_t faultaddress);
 #endif /* _ADDRSPACE_H_ */

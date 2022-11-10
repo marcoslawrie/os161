@@ -41,12 +41,12 @@
 
 #include "coremap.h"
 #include <vmstats.h>
+#include "pt.h"
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
  * assignment, this file is not compiled or linked or in any way
  * used. The cheesy hack versions in dumbvm.c are used instead.
  */
-
 
 
 struct addrspace * as_create(void)
@@ -126,14 +126,21 @@ int as_copy(struct addrspace *old, struct addrspace **ret)
 void as_destroy(struct addrspace *as){
   dumbvm_can_sleep();
 	for(unsigned int i = 0; i < as->npages_code; i++ ) {
-		freeppages(as->code_pt[i], 1);
+		if(as->code_pt[i] & VALID_BIT){
+			freeppages(as->code_pt[i], 1);
+		}
+		
 	}
 	
 	for(unsigned int i = 0; i < as->npages_data; i++ ) {
+		if(as->data_pt[i] & VALID_BIT){
 		freeppages(as->data_pt[i],1);
+		}
 	}
 	for(unsigned int i = 0; i< VM_STACKPAGES; i++) {
+		if(as->stack_pt[i] & VALID_BIT){
 		freeppages(as->stack_pt[i], 1);
+		}
 	}
 
   kfree(as);
@@ -148,7 +155,7 @@ void as_activate(void)
 	if (as == NULL) {
 		return;
 	}
-
+	
 	/* Disable interrupts on this CPU while frobbing the TLB. */
 	spl = splhigh();
 
@@ -157,6 +164,8 @@ void as_activate(void)
 	}
 	increment_TLB_invalidations();
 	splx(spl);
+
+	
 }
 
 void
@@ -229,15 +238,16 @@ int as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 	return ENOSYS;
 }
 
-static void as_zero_region(paddr_t paddr, unsigned npages)
+/*static void as_zero_region(paddr_t paddr, unsigned npages)
 {
 	bzero((void *)PADDR_TO_KVADDR(paddr), npages * PAGE_SIZE);
-}
+}*/
 
 
 
-int as_prepare_load(struct addrspace *as)
+int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 {
+	/* ONLY WHEN DEMANDING PAGE IS NOT IMPLEMENTED
 	for(unsigned int i = 0; i < as->npages_code; i++ ) {
 		KASSERT(as->code_pt[i] == 0);
 	}
@@ -247,17 +257,47 @@ int as_prepare_load(struct addrspace *as)
 
 	for(unsigned int i = 0; i< VM_STACKPAGES; i++) {
 		KASSERT(as->stack_pt[i] == 0);
+	}*/
+	
+	int stackbase;
+	paddr_t paddr = getppages(1);
+	if(paddr == 0){
+		kprintf("Out of memory");
+		panic("OUT OF MEMORY");
+		return -1;
+	}
+	int index;
+	switch (pt)
+	{
+		case IS_CODE_PT:
+			index = (vaddr-as->code_vbase)/PAGE_SIZE;
+			as->code_pt[index] = paddr|VALID_BIT;
+			//as_zero_region(as->code_pt[index] & PAGE_FRAME,1);
+			break;
+		case IS_DATA_PT:
+			index = (vaddr-as->data_vbase)/PAGE_SIZE;
+			as->data_pt[index] = paddr|VALID_BIT;
+			//as_zero_region(as->data_pt[index] & PAGE_FRAME, 1);
+			break;
+		case IS_STACK_PT:	
+			stackbase = USERSTACK - VM_STACKPAGES * PAGE_SIZE;
+			index = (vaddr - stackbase)/PAGE_SIZE;
+			as->stack_pt[index] = paddr|VALID_BIT;
+			
+			//as_zero_region(as->stack_pt[index] & PAGE_FRAME,1);
+
+			break;
+		default:
+			return -1;
+			//Finish the program if the pt does not belong to any of the PT
+			break;
 	}
 	
-
-	
-	
-	
-
 	dumbvm_can_sleep();
+	//ONLY WHEN DEMANDING PAGE IS NOT IMPLEMENTED
 	/*Allocating all code pages*/
 	//Left commented for later implementation
-    for(unsigned int i = 0; i < as->npages_code; i++ ) {
+    /*for(unsigned int i = 0; i < as->npages_code; i++ ) {
 		as->code_pt[i] = getppages(1);
 		as_zero_region(as->code_pt[i],1);
 	}
@@ -269,7 +309,7 @@ int as_prepare_load(struct addrspace *as)
 	for(unsigned int i = 0; i< VM_STACKPAGES; i++) {
 		as->stack_pt[i] = getppages(1);
 		as_zero_region(as->stack_pt[i], 1);
-	}
+	}*/
 
 
 	return 0;

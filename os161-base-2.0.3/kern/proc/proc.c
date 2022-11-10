@@ -48,7 +48,8 @@
 #include <current.h>
 #include <addrspace.h>
 #include <vnode.h>
-
+#include <elf.h>
+#include <vnode.h>
 /*
  * The process for the kernel; this holds all the kernel-only threads.
  */
@@ -73,6 +74,8 @@ proc_create(const char *name)
 		return NULL;
 	}
 
+	//kprintf("progname in proc_create %u:%s\n",(unsigned int)name,name);
+	//kprintf("progname in proc_create %u:%s\n",(unsigned int)proc->p_name,proc->p_name);
 	proc->p_numthreads = 0;
 	spinlock_init(&proc->p_lock);
 
@@ -81,7 +84,8 @@ proc_create(const char *name)
 
 	/* VFS fields */
 	proc->p_cwd = NULL;
-
+    //proc->ph_data = kmalloc(sizeof());
+	//proc->ph_code = 0;
 	return proc;
 }
 
@@ -156,7 +160,7 @@ proc_destroy(struct proc *proc)
 
 		if (proc == curproc) {
 			as = proc_setas(NULL);
-			as_deactivate();
+			//as_deactivate();
 		}
 		else {
 			as = proc->p_addrspace;
@@ -317,4 +321,115 @@ proc_setas(struct addrspace *newas)
 	proc->p_addrspace = newas;
 	spinlock_release(&proc->p_lock);
 	return oldas;
+}
+void proc_set_phcode(Elf_Phdr ph){
+	
+	struct proc *proc = curproc;
+	KASSERT(proc != NULL);
+	spinlock_acquire(&proc->p_lock);
+	proc->ph_code = ph;
+	spinlock_release(&proc->p_lock);
+
+	/*kprintf("INSIDE FUNCTION PROC_SET_PHCODE\n");
+	kprintf("proc->ph.p_type = %d\n",proc->ph_code.p_type);
+	kprintf("proc->ph.p_offset = %d\n",proc->ph_code.p_offset);
+	kprintf("proc->ph.p_vaddr = %d\n",proc->ph_code.p_vaddr);
+	kprintf("proc->ph.p_filesz = %d\n",proc->ph_code.p_filesz);
+	kprintf("proc->ph.p_memsz = %d\n",proc->ph_code.p_memsz);
+	kprintf("proc->ph.p_flags = %d\n",proc->ph_code.p_flags);*/
+	
+}
+Elf_Phdr proc_get_phcode(){
+	
+	Elf_Phdr ph_code;
+	struct proc *proc = curproc;
+
+	if (proc == NULL) {
+		
+	}
+
+	spinlock_acquire(&proc->p_lock);
+	ph_code = proc->ph_code;
+	spinlock_release(&proc->p_lock);
+	/*kprintf("INSIDE FUNCTION PROC_GET_PHCODE\n");
+	kprintf("proc->ph.p_type = %d\n",ph_code.p_type);
+	kprintf("proc->ph.p_offset = %d\n",ph_code.p_offset);
+	kprintf("proc->ph.p_vaddr = %d\n",ph_code.p_vaddr);
+	kprintf("proc->ph.p_filesz = %d\n",ph_code.p_filesz);
+	kprintf("proc->ph.p_memsz = %d\n",ph_code.p_memsz);
+	kprintf("proc->ph.p_flags = %d\n",ph_code.p_flags);*/
+
+
+	return ph_code;
+}
+void proc_set_phdata(Elf_Phdr ph){
+	
+	struct proc *proc = curproc;
+	KASSERT(proc != NULL);
+	spinlock_acquire(&proc->p_lock);
+	proc->ph_data = ph;
+	spinlock_release(&proc->p_lock);
+	
+}
+Elf_Phdr proc_get_phdata(){
+	
+	Elf_Phdr ph_data;
+	struct proc *proc = curproc;
+
+	if (proc == NULL) {
+		
+	}
+
+	spinlock_acquire(&proc->p_lock);
+	ph_data = proc->ph_data;
+	spinlock_release(&proc->p_lock);
+	return ph_data;
+}
+
+void proc_setprogname(char * progname){
+	
+	struct proc *proc = curproc;
+	spinlock_acquire(&proc->p_lock);
+	proc->prog_name = kstrdup(progname);
+	spinlock_release(&proc->p_lock);
+	if (proc->prog_name == NULL) {
+		kprintf("PROC_NAME NULL!!!!!!!!!!!!!!!!!!!!!!!\n");
+		kfree(proc);
+		//return NULL;
+	}
+	//kprintf("progname in proc_setprogname %u:%s\n",(unsigned int)proc->prog_name,proc->prog_name);
+
+}
+char *proc_getprogname(void)
+{
+	char *progname;
+	struct proc *proc = curproc;
+
+	KASSERT(proc != NULL);
+
+	spinlock_acquire(&proc->p_lock);
+	progname = proc->prog_name;
+	spinlock_release(&proc->p_lock);
+	//kprintf("progname in getprogname %u:%s\n",(unsigned int)proc->prog_name,proc->prog_name);
+	//kprintf("progname in getprogname %u:%s\n",(unsigned int)progname,progname);
+	return progname;
+}
+
+void proc_set_vnode(struct vnode *v) {
+	struct proc *proc = curproc;
+
+	KASSERT(proc != NULL);
+	spinlock_acquire(&proc->p_lock);
+	proc->v = v;
+	spinlock_release(&proc->p_lock);
+}
+struct vnode * proc_get_vnode(){
+	struct vnode *v;
+	struct proc *proc = curproc;
+
+	KASSERT(proc != NULL);
+	spinlock_acquire(&proc->p_lock);
+	v = proc->v;
+	spinlock_release(&proc->p_lock);
+	return v;
 }
