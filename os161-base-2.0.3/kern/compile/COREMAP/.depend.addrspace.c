@@ -11,5 +11,6 @@ addrspace.o: ../../vm/addrspace.c ../../include/types.h \
  includelinks/machine/current.h ../../include/thread.h \
  ../../include/array.h includelinks/machine/thread.h \
  ../../include/setjmp.h includelinks/kern/machine/setjmp.h \
- includelinks/mips/tlb.h ../../include/coremap.h ../../include/vmstats.h \
- ../../include/pt.h ../../include/addrspace.h
+ includelinks/mips/tlb.h ../../include/syscall.h opt-syscalls.h \
+ ../../include/coremap.h ../../include/vmstats.h ../../include/pt.h \
+ ../../include/addrspace.h

@@ -38,10 +38,11 @@
 #include <proc.h>
 #include <current.h>
 #include <mips/tlb.h>
-
+#include <syscall.h>
 #include "coremap.h"
 #include <vmstats.h>
 #include "pt.h"
+#include "swapfile.h"
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
  * assignment, this file is not compiled or linked or in any way
@@ -234,7 +235,7 @@ int as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 	/*
 	 * Support for more than two regions is not available.
 	 */
-	kprintf("dumbvm: Warning: too many regions\n");
+	kprintf("Warning: too many regions\n");
 	return ENOSYS;
 }
 
@@ -258,13 +259,66 @@ int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 	for(unsigned int i = 0; i< VM_STACKPAGES; i++) {
 		KASSERT(as->stack_pt[i] == 0);
 	}*/
-	
+	int swap_needed;
 	int stackbase;
-	paddr_t paddr = getppages(1);
-	if(paddr == 0){
+	paddr_t paddr_swapvictim = 0;
+	vaddr_t vaddr_swapvictim = 0; 
+	int pt_swapvictim = 0;
+	(void)vaddr_swapvictim; 
+	paddr_t paddr = getppages(1,U_PAGE,pt,&swap_needed);
+	/*if(paddr == 0){
 		kprintf("Out of memory");
 		panic("OUT OF MEMORY");
 		return -1;
+	}*/
+	//kprintf("SWAPNEEDED: %d\n",swap_needed);
+	if(swap_needed){
+		kprintf("Swap needed, program will end \n");
+		
+		int index_swapvictim = -1;
+		paddr_swapvictim = get_swapvictim();
+		//kprintf("paddr_swapvictim: %u\n",paddr_swapvictim);
+		for(unsigned int i = 0; i<as->npages_data ; i++){
+			kprintf("Comparing: %u and %u \n",(as->data_pt[i] & PAGE_FRAME),paddr_swapvictim);
+			if((as->data_pt[i] & PAGE_FRAME) == paddr_swapvictim){
+				index_swapvictim = i;
+				vaddr_swapvictim = i*PAGE_SIZE + as->data_vbase;
+				paddr_t paddr_aux = getpaddr(vaddr_swapvictim,as);
+				kprintf("%u = %u?\n",(paddr_aux & PAGE_FRAME),paddr_swapvictim);
+				//as->data_pt[i] = paddr_swapvictim | SWAPPED_BIT;
+				pt_swapvictim = IS_DATA_PT;
+				kprintf("DATA PAGE WILL BE SWAPPED\n");
+				break;
+			}
+		}
+		if(pt_swapvictim == 0){ //The victim page is a stack page
+			//kprintf("DATA PAGE WON'T BE SWAPPED\n");
+			for(unsigned int i = 0; i<VM_STACKPAGES ; i++){
+				if((as->stack_pt[i] & PAGE_FRAME) == paddr_swapvictim){
+					index_swapvictim = i;
+					stackbase = USERSTACK - VM_STACKPAGES * PAGE_SIZE;
+					vaddr_swapvictim = i*PAGE_SIZE + stackbase ;
+					//as->stack_pt[i] = paddr_swapvictim | SWAPPED_BIT; //setting swapped bit to indicate that page has been swapped out
+					pt_swapvictim = IS_STACK_PT;
+					kprintf("STACK PAGE WILL BE SWAPPED\n");
+					break;
+				}
+			}
+		}
+		swap_out(vaddr_swapvictim);
+		//Updating pt of the swapped out page
+		switch (pt_swapvictim)
+		{
+		case IS_DATA_PT:
+			as->data_pt[index_swapvictim] = paddr_swapvictim | SWAPPED_BIT;
+			break;
+		case IS_STACK_PT:
+			as->stack_pt[index_swapvictim] = paddr_swapvictim | SWAPPED_BIT;
+			break;
+		}
+		//The physical address that the new vaddr will use is the one that has been just swapped out.
+		paddr = paddr_swapvictim & PAGE_FRAME; 
+		sys__exit(0);
 	}
 	int index;
 	switch (pt)

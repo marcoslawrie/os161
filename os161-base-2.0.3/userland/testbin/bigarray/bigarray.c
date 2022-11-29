@@ -83,18 +83,54 @@ a canal - Panama!
 
 #include <stdio.h>
 #include <string.h>
+#define ARRAY_LENGHT 4096*80
+char palindrome[ARRAY_LENGHT];
+char big_array_2[ARRAY_LENGHT];
 
-char palindrome[262145];
-
-int
-main(void)
+int main(void)
 {
 
-	int i;
-
-	for (i = 0; i < 262145 ; i++) {
+	unsigned long i;
+    int flag = 0;
+	for (i = 5; i < ARRAY_LENGHT/2 ; i += 4096) {
+		if(flag){
+			palindrome[i] = 'a';
+			flag = 0;
+		} else {
+			flag = 1;
+			palindrome[i] = 'b';
+		}
 		
-		palindrome[i] = 'a';
+		
+	}
+	printf("First write done\n");
+	
+	for (; i <ARRAY_LENGHT ; i+= 4096) {
+		
+		if(flag){
+			palindrome[i] = 'a';
+			flag = 0;
+		} else {
+			flag = 1;
+			palindrome[i] = 'b';
+		}
+	}
+	flag = 0; 
+	for (i = 5; i < ARRAY_LENGHT ; i+= 4096) {
+		
+		if(flag){
+			printf("i = %lu \n",i);
+			if(palindrome[i] != 'a'){
+				printf("ERROR\n");
+			}
+			flag = 0;
+		} else {
+			flag = 1;
+			printf("i = %lu \n",i);
+			if(palindrome[i] != 'b'){
+				printf("ERROR\n");
+			}
+		}
 	}
 	return 0;
 }

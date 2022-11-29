@@ -340,15 +340,15 @@ file      proc/proc.c
 # (you will probably want to add stuff here while doing the VM assignment)
 #
 defoption pt
-
+defoption swapping
 file      vm/kmalloc.c
 file      vm/coremap.c
 file      vm/vmstats.c
-
+ 
 optofffile dumbvm   vm/addrspace.c
 optofffile dumbvm   vm/pt.c
 optofffile dumbvm   vm/vm_tlb.c
-
+optfile    swapping vm/swapfile.c
 #
 # Network
 # (nothing here yet)

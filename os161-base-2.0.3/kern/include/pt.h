@@ -4,6 +4,7 @@
 #include "addrspace.h"
 
 #define VALID_BIT	0x00000002
+#define SWAPPED_BIT 0x00000004
 
 
 #define IS_CODE_PT 1

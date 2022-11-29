@@ -50,6 +50,7 @@
 #include <test.h>
 #include <version.h>
 #include "autoconf.h"  // for pseudoconfig
+#include "swapfile.h"
 
 /*
  * These two pieces of data are maintained by the makefiles and build system.
@@ -124,6 +125,7 @@ boot(void)
 
 	/* Late phase of initialization. */
 	vm_bootstrap();
+	
 	kprintf_bootstrap();
 	thread_start_cpus();
 
@@ -131,7 +133,7 @@ boot(void)
 	vfs_setbootfs("emu0");
 
 	kheap_nextgeneration();
-
+	swapfile_init();
 	/*
 	 * Make sure various things aren't screwed up.
 	 */

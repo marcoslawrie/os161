@@ -31,7 +31,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
 		/* We always create pages read-write, so we can't get this */
-		panic("dumbvm: got VM_FAULT_READONLY\n");
+		panic("VM_FAULT_READONLY, system will crash\n");
 	    case VM_FAULT_READ:
 	    case VM_FAULT_WRITE:
 		break;
@@ -104,11 +104,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 		if(result != 0 ){
 			kprintf("Problem with as_prepare_load");
 		}
-		/*load_segment_new(struct addrspace *as, struct vnode *v,
-	     off_t offset, vaddr_t vaddr,
-	     size_t memsize, size_t filesize,
-	     int is_executable);*/
-
 		//kprintf("PAGE FAULT! program will end\n");
 		//sys__exit(0);
 	} else{

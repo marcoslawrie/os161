@@ -4,6 +4,10 @@
         "types.h": "c",
         "elf.h": "c",
         "spinlock.h": "c",
-        "vnode.h": "c"
+        "vnode.h": "c",
+        "swapfile.h": "c",
+        "lib.h": "c",
+        "coremap.h": "c",
+        "fcntl.h": "c"
     }
 }
