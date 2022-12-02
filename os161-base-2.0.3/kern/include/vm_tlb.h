@@ -9,4 +9,5 @@ int tlb_get_rr_victim(void);
 int update_TLB(uint32_t vaddr,uint32_t paddr);
 int load_page(vaddr_t faultaddress);
 int clear_dirty_bit_TLB(uint32_t vaddr,uint32_t paddr);
+int clear_valid_bit_TLB(uint32_t vaddr);
 #endif

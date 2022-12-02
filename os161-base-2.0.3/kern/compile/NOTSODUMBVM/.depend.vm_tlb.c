@@ -13,4 +13,4 @@ vm_tlb.o: ../../vm/vm_tlb.c ../../include/types.h \
  includelinks/mips/tlb.h ../../include/addrspace.h ../../include/vm.h \
  opt-dumbvm.h opt-pt.h ../../include/coremap.h ../../include/syscall.h \
  opt-syscalls.h ../../include/pt.h ../../include/addrspace.h \
- ../../include/vm_tlb.h ../../include/vmstats.h
+ ../../include/vm_tlb.h ../../include/vmstats.h ../../include/swapfile.h

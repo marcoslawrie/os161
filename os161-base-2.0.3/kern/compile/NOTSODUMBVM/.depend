@@ -684,7 +684,8 @@ addrspace.o: ../../vm/addrspace.c ../../include/types.h \
  ../../include/setjmp.h includelinks/kern/machine/setjmp.h \
  includelinks/mips/tlb.h ../../include/syscall.h opt-syscalls.h \
  ../../include/coremap.h ../../include/vmstats.h ../../include/pt.h \
- ../../include/addrspace.h ../../include/swapfile.h
+ ../../include/addrspace.h ../../include/swapfile.h \
+ ../../include/vm_tlb.h
 coremap.o: ../../vm/coremap.c ../../include/types.h \
  ../../include/kern/types.h includelinks/kern/machine/types.h \
  includelinks/machine/types.h ../../include/kern/errno.h \
@@ -756,7 +757,7 @@ vm_tlb.o: ../../vm/vm_tlb.c ../../include/types.h \
  includelinks/mips/tlb.h ../../include/addrspace.h ../../include/vm.h \
  opt-dumbvm.h opt-pt.h ../../include/coremap.h ../../include/syscall.h \
  opt-syscalls.h ../../include/pt.h ../../include/addrspace.h \
- ../../include/vm_tlb.h ../../include/vmstats.h
+ ../../include/vm_tlb.h ../../include/vmstats.h ../../include/swapfile.h
 trap.o: ../../arch/mips/locore/trap.c ../../include/types.h \
  ../../include/kern/types.h includelinks/kern/machine/types.h \
  includelinks/machine/types.h ../../include/signal.h \

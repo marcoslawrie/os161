@@ -43,6 +43,7 @@
 #include <vmstats.h>
 #include "pt.h"
 #include "swapfile.h"
+#include "vm_tlb.h"
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
  * assignment, this file is not compiled or linked or in any way
@@ -279,7 +280,7 @@ int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 		paddr_swapvictim = get_swapvictim();
 		//kprintf("paddr_swapvictim: %u\n",paddr_swapvictim);
 		for(unsigned int i = 0; i<as->npages_data ; i++){
-			kprintf("Comparing: %u and %u \n",(as->data_pt[i] & PAGE_FRAME),paddr_swapvictim);
+			//kprintf("Comparing: %u and %u \n",(as->data_pt[i] & PAGE_FRAME),paddr_swapvictim);
 			if((as->data_pt[i] & PAGE_FRAME) == paddr_swapvictim){
 				index_swapvictim = i;
 				vaddr_swapvictim = i*PAGE_SIZE + as->data_vbase;
@@ -305,8 +306,11 @@ int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 				}
 			}
 		}
+		//Swap out victim page
 		swap_out(vaddr_swapvictim);
-		//Updating pt of the swapped out page
+		//Invalid TLB entry of the swapped page
+		clear_valid_bit_TLB(vaddr_swapvictim);
+		//Updating pt of the swapped out page (setting swapped bit and zeroing valid bit)
 		switch (pt_swapvictim)
 		{
 		case IS_DATA_PT:
@@ -318,7 +322,7 @@ int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 		}
 		//The physical address that the new vaddr will use is the one that has been just swapped out.
 		paddr = paddr_swapvictim & PAGE_FRAME; 
-		sys__exit(0);
+		//sys__exit(0);
 	}
 	int index;
 	switch (pt)
@@ -337,7 +341,6 @@ int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 			stackbase = USERSTACK - VM_STACKPAGES * PAGE_SIZE;
 			index = (vaddr - stackbase)/PAGE_SIZE;
 			as->stack_pt[index] = paddr|VALID_BIT;
-			
 			//as_zero_region(as->stack_pt[index] & PAGE_FRAME,1);
 
 			break;

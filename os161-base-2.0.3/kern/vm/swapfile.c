@@ -57,7 +57,7 @@ int swap_out(vaddr_t vaddr){
     if(result){
         panic("ERROR when opening swapfile");
     }
-    int entry_index = find_swapfile_entry(vaddr);
+    int entry_index = find_free_swapfile_entry(vaddr);
     if(entry_index < 0){
         panic("Out of swap space");
     }
@@ -67,6 +67,7 @@ int swap_out(vaddr_t vaddr){
     iov.iov_ubase = (userptr_t)(vaddr & PAGE_FRAME);
     iov.iov_len = PAGE_SIZE;
     u.uio_iov = &iov;
+    u.uio_iovcnt = 1;
     u.uio_resid = PAGE_SIZE;
     u.uio_offset = entry_index*PAGE_SIZE;
     u.uio_segflg = UIO_USERSPACE;
@@ -87,17 +88,58 @@ int swap_out(vaddr_t vaddr){
     kprintf("Swap_out function ends!\n");
     return 0;
 }
-void swap_in(uint32_t swapfile_offset,vaddr_t vaddr){
-    (void)swapfile_offset;
-    (void)vaddr;
+void swap_in(vaddr_t vaddr){
+    
+    struct addrspace *as;
+    struct iovec iov;
+	struct uio u;
+    struct vnode *v;
+
+    
+    int result;
+    char * swapfile_name = (char*) SWAPFILE_NAME;
+    result = vfs_open(swapfile_name,O_RDWR|O_CREAT|O_APPEND,0,&v);
+    if(result){
+        panic("SWAP_IN: ERROR when opening swapfile");
+    }
+    int entry_index = find_swapfile_index(vaddr);
+    if(entry_index < 0){
+        panic("SWAP_IN : specified entry was no swapped out");
+    }
+
+    as = proc_getas();
+    
+    iov.iov_ubase = (userptr_t)(vaddr & PAGE_FRAME);
+    iov.iov_len = PAGE_SIZE;
+    u.uio_iov = &iov;
+    u.uio_resid = PAGE_SIZE;
+    u.uio_iovcnt = 1;
+    u.uio_offset = entry_index*PAGE_SIZE;
+    u.uio_segflg = UIO_USERSPACE;
+	u.uio_rw = UIO_READ;
+	u.uio_space = as;
+    result = VOP_READ(v, &u);
+    
+    
 }
-int find_swapfile_entry(vaddr_t vaddr){
+int find_free_swapfile_entry(vaddr_t vaddr){
     int entry_index = -1;
     for(int i = 0 ; i<N_PAGES_SWAPFILE ; i++){
         if(swapfile_cm.entry_state[i] == SF_FREE_ENTRY){
             entry_index = i;
             swapfile_cm.entry_state[i] = SF_OCCUPIED_ENTRY;
-            swapfile_cm.entry_vaddr[i] = vaddr;
+            swapfile_cm.entry_vaddr[i] = vaddr & PAGE_FRAME;
+            break;
+        }
+    }
+    return entry_index;
+}
+int find_swapfile_index(vaddr_t vaddr){
+    
+    int entry_index = -1;
+    for(int i = 0 ; i<N_PAGES_SWAPFILE ; i++){
+        if((swapfile_cm.entry_vaddr[i] == (vaddr & PAGE_FRAME)) & (swapfile_cm.entry_state[i] = SF_OCCUPIED_ENTRY)){
+            entry_index = i;
             break;
         }
     }

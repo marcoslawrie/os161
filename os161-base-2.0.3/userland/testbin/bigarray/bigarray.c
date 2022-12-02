@@ -132,5 +132,45 @@ int main(void)
 			}
 		}
 	}
+		for (i = 5; i < ARRAY_LENGHT/2 ; i += 4096) {
+		if(flag){
+			palindrome[i] = 'a';
+			flag = 0;
+		} else {
+			flag = 1;
+			palindrome[i] = 'b';
+		}
+		
+		
+	}
+	printf("First write done\n");
+	
+	for (; i <ARRAY_LENGHT ; i+= 4096) {
+		
+		if(flag){
+			palindrome[i] = 'a';
+			flag = 0;
+		} else {
+			flag = 1;
+			palindrome[i] = 'b';
+		}
+	}
+	flag = 0; 
+	for (i = 5; i < ARRAY_LENGHT ; i+= 4096) {
+		
+		if(flag){
+			printf("i = %lu \n",i);
+			if(palindrome[i] != 'a'){
+				printf("ERROR\n");
+			}
+			flag = 0;
+		} else {
+			flag = 1;
+			printf("i = %lu \n",i);
+			if(palindrome[i] != 'b'){
+				printf("ERROR\n");
+			}
+		}
+	}
 	return 0;
 }

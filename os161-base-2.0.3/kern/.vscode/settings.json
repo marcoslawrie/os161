@@ -8,6 +8,7 @@
         "swapfile.h": "c",
         "lib.h": "c",
         "coremap.h": "c",
-        "fcntl.h": "c"
+        "fcntl.h": "c",
+        "vm_tlb.h": "c"
     }
 }

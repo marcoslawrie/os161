@@ -32,12 +32,11 @@ int swap_out(vaddr_t vaddr);
 /**
  * @brief Read the page from swapfile at address 'swapfile_offset' and write it into memory at 'vaddr' virtual address
  * 
- * @param 'swapfile_offset': offset inside the swapfile where to read page
- * @param 'vaddr': virtual address where to write page in memory
+ * @param 'vaddr': virtual address of the page to be written into memory
  * 
  * @return panic on error.
 */
-void swap_in(uint32_t swapfile_offset,vaddr_t vaddr);
+void swap_in(vaddr_t vaddr);
 
 /**
  * @brief gets a free entry in the swapfile
@@ -46,7 +45,11 @@ void swap_in(uint32_t swapfile_offset,vaddr_t vaddr);
  * 
  * @return entry index or -1 in error
 */
-int find_swapfile_entry(vaddr_t vaddr);
+int find_free_swapfile_entry(vaddr_t vaddr);
+
+
+int find_swapfile_index(vaddr_t vaddr);
+
 
 
 

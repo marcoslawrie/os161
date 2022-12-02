@@ -15,6 +15,7 @@
 #include "pt.h"
 #include "vm_tlb.h"
 #include <vmstats.h>
+#include "swapfile.h"
 
 
 int vm_fault(int faulttype, vaddr_t faultaddress){
@@ -76,6 +77,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 	vaddr_t stackbase;
 	stackbase = USERSTACK - VM_STACKPAGES * PAGE_SIZE;
 	uint32_t page_fault = 0;
+	uint32_t page_swapped = 0;
 	uint32_t index;
 	index = 0;
 	
@@ -84,29 +86,38 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 	case IS_CODE_PT:
 		index = (faultaddress-as->code_vbase)/PAGE_SIZE;
 		page_fault = !(as->code_pt[index] & VALID_BIT);/* code */
+		
 		break;
 	case IS_DATA_PT:
 		index = (faultaddress-as->data_vbase)/PAGE_SIZE;
 		page_fault = !(as->data_pt[index] & VALID_BIT);
+		page_swapped = (as->data_pt[index] & SWAPPED_BIT);
 		break;
 	case IS_STACK_PT:
 		index = (faultaddress - stackbase)/PAGE_SIZE;
 		page_fault = !(as->stack_pt[index] & VALID_BIT);
+		page_swapped = (as->stack_pt[index] & SWAPPED_BIT);
 		break; 
 	default:
 	
 		break;
 	}
-
-	if(page_fault){
+	 /*If page has been swapped we need to call as_prepare_load to obtain a physical 
+	 page to locate the swapped page, it will probably swap out another page */
+	if(page_swapped){
+		result = as_prepare_load(as,faultaddress,pt);
+		if(result != 0 ){
+			kprintf("PAGE SWAPPED: Problem with as_prepare_load");
+		}
+	}else if(page_fault){
 		increment_page_fault_ELF();
 		result = as_prepare_load(as,faultaddress,pt);
 		if(result != 0 ){
-			kprintf("Problem with as_prepare_load");
+			kprintf("PAGE FAULT: Problem with as_prepare_load");
 		}
 		//kprintf("PAGE FAULT! program will end\n");
 		//sys__exit(0);
-	} else{
+	} else{ /*No page fault, check if swap in is necessary*/
 		//kprintf("vm fault but not PAGE FAULT\n");
 		paddr = getpaddr(faultaddress,as) & PAGE_FRAME;
 		if(paddr == 0){
@@ -141,10 +152,20 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 	if(result != 0){
 		kprintf("Warning: TLB not updated");
 	}
-	
+	/*Zeroing the page in memory to write the new page
+	This new page can come from ELF file or from SWAPFILE*/
 	bzero((void *)(faultaddress&PAGE_FRAME),PAGE_SIZE);
 	
-	if(page_fault){	
+	if(page_swapped){
+		kprintf("SWAP IN DETECTED! program will end after swap_in function \n");
+		int spl;
+		spl = splhigh();
+		swap_in(faultaddress);
+		splx(spl);
+		kprintf("Ending program\n");
+		sys__exit(0);
+
+	}else if(page_fault){	
 		if(pt != IS_STACK_PT){
 			int spl;
 			//Desactivate interrupts while loading the page
@@ -159,31 +180,11 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 					return EFAULT;
 				}
 			}
-
-
-			 
-
-
 		}
 	}
 	
 
 
-	/*for (i=0; i<NUM_TLB; i++) {
-		tlb_read(&ehi, &elo, i);
-		if (elo & TLBLO_VALID) {
-			continue;
-		}
-		
-		
-
-		ehi = faultaddress;
-		elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-		DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
-		tlb_write(ehi, elo, i);
-		splx(spl);
-		return 0;
-	}*/
 	return 0;
 
 }
@@ -263,7 +264,25 @@ int clear_dirty_bit_TLB(uint32_t vaddr,uint32_t paddr) {
 			}
 			else
 			{
-				kprintf("Warning: failure while searching the entry in the TLB\n");
+				kprintf("Warning:[clear_dirty_bit_TLB] failure while searching the entry in the TLB\n");
+				return EFAULT;
+			}
+}
+int clear_valid_bit_TLB(uint32_t vaddr) {
+	int tlb_index = tlb_probe(vaddr & PAGE_FRAME, 0);
+	if (tlb_index >= 0 && tlb_index < NUM_TLB)
+			{
+				/*Getting old paddr*/
+				vaddr_t vaddr_aux;
+				paddr_t paddr_aux;
+				tlb_read(&vaddr_aux,&paddr_aux, tlb_index);
+				paddr_aux = paddr_aux &  !TLBLO_VALID;
+				tlb_write(vaddr & PAGE_FRAME, paddr_aux, tlb_index);
+				return 0;
+			}
+			else
+			{
+				kprintf("Warning:[clear_valid_bit_TLB] failure while searching the entry in the TLB\n");
 				return EFAULT;
 			}
 }
