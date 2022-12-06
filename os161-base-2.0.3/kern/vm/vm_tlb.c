@@ -21,11 +21,9 @@
 int vm_fault(int faulttype, vaddr_t faultaddress){
 	
 	paddr_t paddr;
-	//int tlb_entry_index;
-	//uint32_t ehi, elo;
 	struct addrspace *as;
 	int result;
-	//faultaddress &= PAGE_FRAME;
+	
 	
 	DEBUG(DB_VM, "dumbvm: fault: 0x%x\n", faultaddress&PAGE_FRAME);
 
@@ -74,10 +72,16 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 	
 	//Find to which page table the virtual address belongs to
 	int pt = identify_PT(as,faultaddress);
+	if(!pt) {
+		kprintf("ERROR: [VM_FAULT] fail when calling identify_pt, faultaddress = %u,as->code_vbase = %u, as->data_vbase = %u\n",faultaddress,as->code_vbase,as->data_vbase);
+		sys__exit(0);
+	}
+	increment_TLB_faults();
 	vaddr_t stackbase;
 	stackbase = USERSTACK - VM_STACKPAGES * PAGE_SIZE;
 	uint32_t page_fault = 0;
 	uint32_t page_swapped = 0;
+	
 	uint32_t index;
 	index = 0;
 	
@@ -105,23 +109,29 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 	 /*If page has been swapped we need to call as_prepare_load to obtain a physical 
 	 page to locate the swapped page, it will probably swap out another page */
 	if(page_swapped){
+		//kprintf("SWAP IN DETECTED\n");
+		increment_page_fault_disk();
+		increment_page_fault_swapfile_get();
 		result = as_prepare_load(as,faultaddress,pt);
 		if(result != 0 ){
-			kprintf("PAGE SWAPPED: Problem with as_prepare_load");
+			kprintf("PAGE SWAPPED: Problem with as_prepare_load\n");
 		}
 	}else if(page_fault){
-		increment_page_fault_ELF();
+		
 		result = as_prepare_load(as,faultaddress,pt);
 		if(result != 0 ){
-			kprintf("PAGE FAULT: Problem with as_prepare_load");
+			kprintf("PAGE FAULT: Problem with as_prepare_load\n");
 		}
 		//kprintf("PAGE FAULT! program will end\n");
-		//sys__exit(0);
+		//
 	} else{ /*No page fault, check if swap in is necessary*/
 		//kprintf("vm fault but not PAGE FAULT\n");
+		increment_TLB_reloads();
 		paddr = getpaddr(faultaddress,as) & PAGE_FRAME;
 		if(paddr == 0){
-			kprintf("Warning: getpaddr failed");
+			kprintf("PT=%d\n",pt);
+			kprintf("[VM_FAULT] Warning: getpaddr failed\n");
+			sys__exit(0); 
 		}
 		update_TLB(faultaddress,paddr);
 		return 0;
@@ -154,20 +164,21 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 	}
 	/*Zeroing the page in memory to write the new page
 	This new page can come from ELF file or from SWAPFILE*/
-	bzero((void *)(faultaddress&PAGE_FRAME),PAGE_SIZE);
+
 	
 	if(page_swapped){
-		kprintf("SWAP IN DETECTED! program will end after swap_in function \n");
+		/*SWAP IN needed*/
 		int spl;
 		spl = splhigh();
 		swap_in(faultaddress);
 		splx(spl);
-		kprintf("Ending program\n");
-		sys__exit(0);
 
 	}else if(page_fault){	
+
 		if(pt != IS_STACK_PT){
 			int spl;
+			increment_page_fault_disk();
+			increment_page_fault_ELF();
 			//Desactivate interrupts while loading the page
 			spl = splhigh();
 			load_page(faultaddress);
@@ -180,6 +191,9 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 					return EFAULT;
 				}
 			}
+		} else {
+			increment_page_fault_zeroed();
+			bzero((void *)(faultaddress&PAGE_FRAME),PAGE_SIZE);
 		}
 	}
 	
@@ -214,15 +228,13 @@ int tlb_get_rr_victim() {
 int update_TLB(uint32_t vaddr,uint32_t paddr) {
 	
 	int spl;
-		/* make sure it's page-aligned */
-
+	/* make sure it's page-aligned */
 	vaddr &= PAGE_FRAME;
-	//kprintf("at update_TLB start: vaddr = %x, paddr = %x\n",vaddr,paddr);
 	KASSERT((paddr & PAGE_FRAME) == paddr);
 	int tlb_entry_index;
 	/* Disable interrupts on this CPU while frobbing the TLB. */
 	spl = splhigh();
-	increment_TLB_faults();
+	//increment_TLB_faults();
 	tlb_entry_index = get_free_TLB_entry();
 	//Check if there is a free entry in the TLB
 	if(tlb_entry_index >= 0) {
@@ -242,9 +254,8 @@ int update_TLB(uint32_t vaddr,uint32_t paddr) {
 		splx(spl);
 		return 0;
 	}
-	/* For debug purpose */
-
 	
+	/* For debug purpose */
 	return 0;
 	kprintf("Problem while updating the TLB\n");
 	splx(spl);
@@ -278,11 +289,12 @@ int clear_valid_bit_TLB(uint32_t vaddr) {
 				tlb_read(&vaddr_aux,&paddr_aux, tlb_index);
 				paddr_aux = paddr_aux &  !TLBLO_VALID;
 				tlb_write(vaddr & PAGE_FRAME, paddr_aux, tlb_index);
+				kprintf("valid bit cleared");
 				return 0;
 			}
 			else
 			{
-				kprintf("Warning:[clear_valid_bit_TLB] failure while searching the entry in the TLB\n");
+				//kprintf("Warning:[clear_valid_bit_TLB] failure while searching the entry in the TLB, TLB index: %d\n",tlb_index);
 				return EFAULT;
 			}
 }

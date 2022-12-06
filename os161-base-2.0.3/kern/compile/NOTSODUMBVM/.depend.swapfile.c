@@ -13,4 +13,4 @@ swapfile.o: ../../vm/swapfile.c ../../include/types.h \
  includelinks/kern/machine/setjmp.h includelinks/mips/tlb.h \
  ../../include/addrspace.h ../../include/vm.h opt-dumbvm.h opt-pt.h \
  ../../include/coremap.h ../../include/pt.h ../../include/addrspace.h \
- ../../include/swapfile.h
+ ../../include/swapfile.h ../../include/vmstats.h

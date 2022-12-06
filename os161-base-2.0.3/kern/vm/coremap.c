@@ -266,7 +266,8 @@ paddr_t get_swapvictim(){
   paddr_t victim = next_victim * PAGE_SIZE;
   int next_victim_aux = next_victim;
 
-  if(next_victim<0){
+  if(next_victim<=0){
+    panic("WARNING: [GET_SWAPVICTIM] No next victim, next victim <0");
     return 0;
   } else{
     next_victim =  next_allocated[next_victim];

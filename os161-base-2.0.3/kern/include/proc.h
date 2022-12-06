@@ -102,17 +102,63 @@ struct addrspace *proc_getas(void);
 
 /* Change the address space of the current process, and return the old one. */
 struct addrspace *proc_setas(struct addrspace *);
+
+/**
+ * @brief
+ * 
+ * @param
+ * 
+ * @return
+*/
 /* Set the program header of the code segment of the current process. */
 void proc_set_phcode(Elf_Phdr ph);
 Elf_Phdr proc_get_phcode(void);
+
+/**
+ * @brief
+ * 
+ * @param
+ * 
+ * @return
+*/
 /* Set the program header of the data segment of the current process. */
 void proc_set_phdata(Elf_Phdr ph);
+
+/**
+ * @brief
+ * 
+ * @param
+ * 
+ * @return
+*/
 Elf_Phdr proc_get_phdata(void);
 
+/**
+ * @brief
+ * 
+ * @param
+ * 
+ * @return
+*/
 void proc_setprogname(char * progname);
 
+
+/**
+ * @brief
+ * 
+ * @param
+ * 
+ * @return
+*/
 char *proc_getprogname(void);
 
+/**
+ * @brief
+ * 
+ * @param
+ * 
+ * @return
+*/
 void proc_set_vnode(struct vnode *v);
 
 struct vnode * proc_get_vnode(void);

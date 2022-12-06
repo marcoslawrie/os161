@@ -154,6 +154,20 @@ void              dumbvm_can_sleep(void);
  *               in the space pointed to by ENTRYPOINT.
  */
 
+/**
+ * @brief
+ * 
+ * @param
+ * 
+ * @return
+*/
 int load_elf(struct vnode *v, vaddr_t *entrypoint);
+/**
+ * @brief
+ * 
+ * @param
+ * 
+ * @return
+*/
 int load_segment_new(vaddr_t faultaddress);
 #endif /* _ADDRSPACE_H_ */

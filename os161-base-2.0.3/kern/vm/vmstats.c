@@ -52,7 +52,7 @@ void increment_page_fault_swapfile_get(){
 void increment_page_fault_swapfile_write(){
     page_fault_swapfile_write++;
 }
-void print_vm_status(){
+void print_vm_stats(){
     kprintf("################### VM STATS ###################\n");
     kprintf("TLB faults: %d\n",TLB_faults);
     kprintf("TLB faults with free: %d\n",TLB_faults_with_free);
@@ -87,4 +87,19 @@ void print_mem_stats(){
     }
     kprintf("Total number of frames: %d\n",nRamFrames);
     kprintf("Number of frames occupied: %d\n",nRamFrames_occupied);
+}
+void check_vm_stats(){
+    unsigned int sum = TLB_faults_with_free + TLB_faults_with_replace;
+    if(sum != TLB_faults){
+        kprintf("WARNING: TLB_faults_with_free + TLB_faults_with_replace != TLB_faults \n");
+
+    }
+    sum = TLB_reloads + page_fault_disk + page_fault_zeroed;
+    if(sum != TLB_faults){
+        kprintf("WARNING: TLB_reloads + page_fault_disk + page_fault_zeroed != TLB_faults\n");
+    }
+    sum = page_fault_ELF + page_fault_swapfile_get;
+    if(sum != page_fault_disk){
+        kprintf("WARNING: page_fault_ELF + page_fault_swapfile_get != page_fault_disk\n");
+    }
 }

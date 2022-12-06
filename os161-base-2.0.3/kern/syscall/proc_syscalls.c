@@ -14,13 +14,19 @@
 #include <proc.h>
 #include <thread.h>
 #include <addrspace.h>
-
+#include <vmstats.h>
+#include <coremap.h>
+#include <swapfile.h>
 /*
  * simple proc management system calls
  */
 void
 sys__exit(int status)
 {
+  print_vm_stats();
+  check_vm_stats();
+  //print_coremap_status();
+  //print_swapfile_coremap_status();
   /* get address space of current process and destroy */
   struct addrspace *as = proc_getas();
   as_destroy(as);

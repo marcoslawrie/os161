@@ -123,8 +123,7 @@ int load_page(vaddr_t faultaddress){
 		offset = ph.p_offset;
 		
 	}else if(((faultaddress - ph.p_vaddr)&PAGE_FRAME) > ph.p_filesz){
-		/* above the end of the segment - page should only be zero filled 
-		(no data inside the elf file) */
+		/* above the end of the segment - page should only be zero filled */
 		offset = ph.p_offset + ph.p_filesz;
 		
 	}else{
@@ -138,9 +137,9 @@ int load_page(vaddr_t faultaddress){
 
 	//FILE SIZE COMPUTING: amount of bytes to be read from the elf file.
 	if(npage_from_start == 0){
-		/* first page from segment */
-	if(  ph.p_filesz < (PAGE_SIZE - ph.p_offset % PAGE_SIZE)){
-			/* segment size lower then a page */
+		// first page from segment 
+		if(  ph.p_filesz < (PAGE_SIZE - ph.p_offset % PAGE_SIZE)){
+			// segment size smaller than a page 
 			filesize = ph.p_filesz;
 		}else{
 			/* read until the end of the first page */
@@ -149,7 +148,7 @@ int load_page(vaddr_t faultaddress){
 	}else{
 		/* intermidiate page */
 		filesize = (ph.p_filesz - (offset-ph.p_offset));
-		/* saturation at one page */
+		/* saturation at one page, we load only one page at most */
 		if( filesize > PAGE_SIZE ){
 			filesize = PAGE_SIZE;
 		}
@@ -164,52 +163,23 @@ int load_page(vaddr_t faultaddress){
 		vaddr =  faultaddress & PAGE_FRAME;
 	}
 	
-	//kprintf("vaddr = %u\n", vaddr);
-	//kprintf("PADDR_TO_KVADDR(paddr) = %u\n", PADDR_TO_KVADDR(getpaddr(vaddr, as)));
-
-
-
-	
-	
 	
 	progname = proc_getprogname();
-	//v = proc_get_vnode();
-	//kprintf("progname in load_page %u:%s\n",(unsigned int) progname,progname);
 
 	(void) u;
 	(void) result;
 	//We have one PT for each segment, identifying the PT that the faultaddress belongs to, tell us which segment it belongs to
-
-
-	/*kprintf("INSIDE FUNCTION LOAD_PAGE\n");
-	kprintf("proc->ph.p_type = %d\n",ph.p_type);
-	kprintf("proc->ph.p_offset = %d\n",ph.p_offset);
-	kprintf("proc->ph.p_vaddr = %d\n",ph.p_vaddr);
-	kprintf("proc->ph.p_filesz = %d\n",ph.p_filesz);
-	kprintf("proc->ph.p_memsz = %d\n",ph.p_memsz);
-	kprintf("proc->ph.p_flags = %d\n",ph.p_flags);*/
-	
+		
 	
 	//Open ELF file
-
 	result = vfs_open(progname, O_RDONLY, 0, &v);
 	if (result) {
-		kprintf("Couldn't open the file");
-		return result;
+		panic("[LOAD_PAGE]: vfs_open failed while opening elf file");
 	}
 
-	//int relative_offset = ((faultaddress - ph.p_vaddr)/PAGE_SIZE)*PAGE_SIZE;
-	//kprintf("relative offset: %d",relative_offset);
+
 	is_executable = ph.p_flags & PF_X;
-	//offset = ph.p_offset + relative_offset;
-	//memsize = ph.p_memsz;
-	//filesize = PAGE_SIZE;
-	/*if (filesize > memsize) {
-		kprintf("ELF: warning: segment filesize > segment memsize\n");
-		filesize = memsize;
-	} else if(filesize > (memsize - relative_offset)){
-		filesize = memsize - relative_offset;
-	}*/
+
 
 	iov.iov_ubase = (userptr_t)vaddr;
 	iov.iov_len = memsize;		 // length of the memory space
@@ -223,8 +193,7 @@ int load_page(vaddr_t faultaddress){
 
 	result = VOP_READ(v, &u);
 	if (result) {
-		kprintf("VOP_READ failed\n");
-		return result;
+		panic("[LOAD_PAGE]: VOP_READ failed while reading elf file");
 	}
 
 	if (u.uio_resid != 0) {
@@ -248,9 +217,7 @@ load_segment(struct addrspace *as, struct vnode *v,
 	struct iovec iov;
 	struct uio u;
 	int result;
-//result = load_segment(as, v, ph.p_offset, ph.p_vaddr,
-	//			      ph.p_memsz, ph.p_filesz,
-	//			      ph.p_flags & PF_X);
+
 	if (filesize > memsize) {
 		kprintf("ELF: warning: segment filesize > segment memsize\n");
 		filesize = memsize;
@@ -412,12 +379,6 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 
 		if(ph.p_flags & PF_X) { //Segment is executable so it is code segment
 			proc_set_phcode(ph);
-			/*kprintf("ph.p_type = %d\n",ph.p_type);
-			kprintf("ph.p_offset = %d\n",ph.p_offset);
-			kprintf("ph.p_vaddr = %d\n",ph.p_vaddr);
-			kprintf("ph.p_filesz = %d\n",ph.p_filesz);
-			kprintf("ph.p_memsz = %d\n",ph.p_memsz);
-			kprintf("ph.p_flags = %d\n",ph.p_flags);*/
 		} else { //data segment
 			proc_set_phdata(ph);
 		}
@@ -431,59 +392,12 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 		}
 	}
 	
-	//Only when DEMANDING PAGE is not supported
-	/*result = as_prepare_load(as);
-	if (result) {
-		return result;
-	}*/
 
-	/*
-	 * Now actually load each segment.
-	 */
-    //Only when DEMANDING PAGE is not supported
-	
-	//for (i=0; i<eh.e_phnum; i++) {
-	//	off_t offset = eh.e_phoff + i*eh.e_phentsize;
-	//	uio_kinit(&iov, &ku, &ph, sizeof(ph), offset, UIO_READ);
-//
-	//	result = VOP_READ(v, &ku);
-	//	if (result) {
-	//		return result;
-	//	}
-//
-	//	if (ku.uio_resid != 0) {
-			/* short read; problem with executable? */
-	//		kprintf("ELF: short read on phdr - file truncated?\n");
-	//		return ENOEXEC;
-	//	}
-//
-	//	switch (ph.p_type) {
-	//	    case PT_NULL:  continue;
-	//	    case PT_PHDR:  continue;
-	//	    case PT_MIPS_REGINFO:  continue;
-	//	    case PT_LOAD: break;
-	//	    default:
-	//		kprintf("loadelf: unknown segment type %d\n",
-	//			ph.p_type);
-	//		return ENOEXEC;
-	//	}
-//
-	//	result = load_segment(as, v, ph.p_offset, ph.p_vaddr,
-	//			      ph.p_memsz, ph.p_filesz,
-	//			      ph.p_flags & PF_X);
-	//	if (result) {
-	//		return result;
-	//	}
-	//}
 	if(0){
 		load_segment(as, v, ph.p_offset, ph.p_vaddr,
 				      ph.p_memsz, ph.p_filesz,
 				      ph.p_flags & PF_X);
 	}
-	//result = as_complete_load(as);
-	//if (result) {
-	//	return result;
-	//}
 
 	*entrypoint = eh.e_entry;
 

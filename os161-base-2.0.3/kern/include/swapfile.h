@@ -51,6 +51,9 @@ int find_free_swapfile_entry(vaddr_t vaddr);
 int find_swapfile_index(vaddr_t vaddr);
 
 
+int free_swapfile_entry(int entry_index);
+
+void print_swapfile_coremap_status(void);
 
 
 

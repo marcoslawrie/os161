@@ -17,6 +17,7 @@
 #include <coremap.h>
 #include "pt.h"
 #include <swapfile.h>
+#include <vmstats.h>
 
 static struct swapfile_coremap swapfile_cm;
 
@@ -45,12 +46,12 @@ void swapfile_init() {
     
 }
 int swap_out(vaddr_t vaddr){
-    
+    increment_page_fault_swapfile_write();
     struct addrspace *as;
     struct iovec iov;
 	struct uio u;
     struct vnode *v;
-    kprintf("Swap_out function strats!\n");
+    //kprintf("Swap_out function strats!\n");
     int result;
     char * swapfile_name = (char*) SWAPFILE_NAME;
     result = vfs_open(swapfile_name,O_RDWR|O_CREAT|O_APPEND,0,&v);
@@ -85,7 +86,8 @@ int swap_out(vaddr_t vaddr){
         panic("SWAPFILE write failed\n");
     }
     vfs_close(v);
-    kprintf("Swap_out function ends!\n");
+
+    //kprintf("Swap_out function ends!\n");
     return 0;
 }
 void swap_in(vaddr_t vaddr){
@@ -119,11 +121,25 @@ void swap_in(vaddr_t vaddr){
 	u.uio_rw = UIO_READ;
 	u.uio_space = as;
     result = VOP_READ(v, &u);
+    if(result){
+        vfs_close(v);
+        panic("ERROR while writting in SWAPFILE");
+    }
+    if(u.uio_resid != 0){
+        vfs_close(v);
+        kprintf("WARNING - SWAPFILE: short write\n");
+        panic("SWAPFILE write failed\n");
+    }
+    vfs_close(v);
+    free_swapfile_entry(entry_index);
     
     
 }
 int find_free_swapfile_entry(vaddr_t vaddr){
     int entry_index = -1;
+    if(vaddr == 0){
+        panic("Incorrect virtual address");
+    }
     for(int i = 0 ; i<N_PAGES_SWAPFILE ; i++){
         if(swapfile_cm.entry_state[i] == SF_FREE_ENTRY){
             entry_index = i;
@@ -144,4 +160,20 @@ int find_swapfile_index(vaddr_t vaddr){
         }
     }
     return entry_index;
+}
+int free_swapfile_entry(int entry_index){
+    if((entry_index>=0) & (entry_index<N_PAGES_SWAPFILE)){
+        swapfile_cm.entry_state[entry_index] = SF_FREE_ENTRY;
+        return 0;
+    }else{
+        
+        kprintf("WARNING: free_swapfile_entry invalid entry index");
+        return 1;
+    }
+}
+void print_swapfile_coremap_status(){
+    kprintf("SF_FREE_ENTRY = %d, SF_OCCUPIED_ENTRY = %d\n",(int)SF_FREE_ENTRY,(int)SF_OCCUPIED_ENTRY);
+    for(int i = 0 ; i<120 ; i++){
+        kprintf("swapfile_cm.entry_vaddr[%d] = %u, entry_state[%d] = %d\n",i,swapfile_cm.entry_vaddr[i],i,(int)swapfile_cm.entry_state[i]);
+    }
 }

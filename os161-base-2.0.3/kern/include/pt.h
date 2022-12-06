@@ -11,8 +11,22 @@
 #define IS_DATA_PT 2
 #define IS_STACK_PT 3
 
-
+/**
+ * @brief
+ * 
+ * @param
+ * 
+ * @return
+*/
 paddr_t getpaddr(vaddr_t faultaddres, struct addrspace *as);
+
+/**
+ * @brief
+ * 
+ * @param
+ * 
+ * @return
+*/
 int identify_PT(struct addrspace *as, vaddr_t vaddr);
 
 #endif

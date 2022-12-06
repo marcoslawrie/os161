@@ -507,7 +507,7 @@ static int cmd_vmstats(int nargs, char **args)
 {
 	(void)nargs;
 	(void)args;
-	print_vm_status();
+	print_vm_stats();
 	return 0;
 }
 ////////////////////////////////////////

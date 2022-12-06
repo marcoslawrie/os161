@@ -274,21 +274,23 @@ int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 	}*/
 	//kprintf("SWAPNEEDED: %d\n",swap_needed);
 	if(swap_needed){
-		kprintf("Swap needed, program will end \n");
+		//kprintf("Swap out needed\n");
 		
 		int index_swapvictim = -1;
-		paddr_swapvictim = get_swapvictim();
+		paddr_swapvictim = get_swapvictim() & PAGE_FRAME;
 		//kprintf("paddr_swapvictim: %u\n",paddr_swapvictim);
 		for(unsigned int i = 0; i<as->npages_data ; i++){
 			//kprintf("Comparing: %u and %u \n",(as->data_pt[i] & PAGE_FRAME),paddr_swapvictim);
-			if((as->data_pt[i] & PAGE_FRAME) == paddr_swapvictim){
+			int swapped = (as->data_pt[i] & SWAPPED_BIT) != 0;
+			int valid   = (as->data_pt[i] & VALID_BIT) != 0;
+			if(((as->data_pt[i] & PAGE_FRAME) == paddr_swapvictim) && !swapped && valid){
 				index_swapvictim = i;
 				vaddr_swapvictim = i*PAGE_SIZE + as->data_vbase;
-				paddr_t paddr_aux = getpaddr(vaddr_swapvictim,as);
-				kprintf("%u = %u?\n",(paddr_aux & PAGE_FRAME),paddr_swapvictim);
+				//paddr_t paddr_aux = getpaddr(vaddr_swapvictim,as);
+				//##############kprintf("%u = %u?\n",(paddr_aux & PAGE_FRAME),paddr_swapvictim);
 				//as->data_pt[i] = paddr_swapvictim | SWAPPED_BIT;
 				pt_swapvictim = IS_DATA_PT;
-				kprintf("DATA PAGE WILL BE SWAPPED\n");
+				//kprintf("DATA PAGE WILL BE SWAPPED\n");
 				break;
 			}
 		}
@@ -301,11 +303,27 @@ int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 					vaddr_swapvictim = i*PAGE_SIZE + stackbase ;
 					//as->stack_pt[i] = paddr_swapvictim | SWAPPED_BIT; //setting swapped bit to indicate that page has been swapped out
 					pt_swapvictim = IS_STACK_PT;
-					kprintf("STACK PAGE WILL BE SWAPPED\n");
+				//	kprintf("STACK PAGE WILL BE SWAPPED\n");
 					break;
 				}
 			}
 		}
+		if(index_swapvictim == -1){
+			kprintf("paddr_swapvictim: %u\n",paddr_swapvictim & PAGE_FRAME);
+			kprintf("WARNING:[AS_PREPARE_LOAD] Swap victim not found\n");
+			kprintf("DATA PT:\n");
+			for(unsigned int i = 0; i<as->npages_data ; i++){
+				kprintf("i = %u, %u == %u ? VALID = %d SWAPPED = %d\n",i,(as->data_pt[i] & PAGE_FRAME),paddr_swapvictim,!(as->data_pt[i] & VALID_BIT),(as->data_pt[i] & SWAPPED_BIT));
+			}
+			kprintf("stack PT:\n");
+			for(unsigned int i = 0; i<VM_STACKPAGES ; i++){
+				kprintf("i = %u, %u == %u ?VALID = %d SWAPPED = %d\n",i,(as->stack_pt[i] & PAGE_FRAME), paddr_swapvictim,!(as->stack_pt[i] & VALID_BIT),(as->stack_pt[i] & SWAPPED_BIT));
+			}
+
+			panic("asd\n");
+			//sys__exit(0);
+		}
+
 		//Swap out victim page
 		swap_out(vaddr_swapvictim);
 		//Invalid TLB entry of the swapped page
@@ -314,10 +332,13 @@ int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 		switch (pt_swapvictim)
 		{
 		case IS_DATA_PT:
-			as->data_pt[index_swapvictim] = paddr_swapvictim | SWAPPED_BIT;
+			as->data_pt[index_swapvictim] = paddr_swapvictim | SWAPPED_BIT | VALID_BIT;
 			break;
 		case IS_STACK_PT:
-			as->stack_pt[index_swapvictim] = paddr_swapvictim | SWAPPED_BIT;
+			as->stack_pt[index_swapvictim] = paddr_swapvictim | SWAPPED_BIT | VALID_BIT;
+			break;
+		default:
+			panic("[AS_PREPARE_LOAD]: pt_swapvictim incorrect");
 			break;
 		}
 		//The physical address that the new vaddr will use is the one that has been just swapped out.
@@ -325,6 +346,7 @@ int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 		//sys__exit(0);
 	}
 	int index;
+	//Updating PT entry of the required page
 	switch (pt)
 	{
 		case IS_CODE_PT:
@@ -345,30 +367,13 @@ int as_prepare_load(struct addrspace *as, vaddr_t vaddr, int pt)
 
 			break;
 		default:
-			return -1;
+			panic("[AS_PREPARE_LOAD] PT not a valid value");
+			//return -1;
 			//Finish the program if the pt does not belong to any of the PT
 			break;
 	}
 	
 	dumbvm_can_sleep();
-	//ONLY WHEN DEMANDING PAGE IS NOT IMPLEMENTED
-	/*Allocating all code pages*/
-	//Left commented for later implementation
-    /*for(unsigned int i = 0; i < as->npages_code; i++ ) {
-		as->code_pt[i] = getppages(1);
-		as_zero_region(as->code_pt[i],1);
-	}
-	
-	for(unsigned int i = 0; i < as->npages_data; i++ ) {
-		as->data_pt[i] = getppages(1);
-		as_zero_region(as->data_pt[i], 1);
-	}
-	for(unsigned int i = 0; i< VM_STACKPAGES; i++) {
-		as->stack_pt[i] = getppages(1);
-		as_zero_region(as->stack_pt[i], 1);
-	}*/
-
-
 	return 0;
 }
 
