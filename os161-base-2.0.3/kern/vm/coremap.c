@@ -202,7 +202,7 @@ int freeppages(paddr_t addr, unsigned long npages){
   long i, first, np=(long)npages;	
   int prev,next;
 
-  if (!isTableActive()) return 0; 
+  if (!isTableActive()) return 1; 
   first = addr/PAGE_SIZE;
   KASSERT(allocSize!=NULL);
   KASSERT(nRamFrames>first);
@@ -226,7 +226,7 @@ int freeppages(paddr_t addr, unsigned long npages){
   }
   spinlock_release(&freemem_lock);
 
-  return 1;
+  return 0;
 }
 
 /* Allocate/free some kernel-space virtual pages */
@@ -290,6 +290,11 @@ void print_coremap_status(){
     next_allocated[%d] = %d , prev_allocated[%d] = %d\n",\
     i,(int)freeRamFrames[i],i,allocSize[i],i,next_allocated[i],i,prev_allocated[i]);
   }
+}
+
+void reset_coremap_vars(){
+  next_victim    = -1;
+  last_allocated = -1;
 }
 
 

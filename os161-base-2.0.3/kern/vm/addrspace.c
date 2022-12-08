@@ -144,8 +144,8 @@ void as_destroy(struct addrspace *as){
 		freeppages(as->stack_pt[i], 1);
 		}
 	}
-
-  kfree(as);
+	reset_coremap_vars();
+  	kfree(as);
 }
 
 void as_activate(void)

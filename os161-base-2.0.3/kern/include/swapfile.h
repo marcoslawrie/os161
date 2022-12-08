@@ -30,7 +30,7 @@ void swapfile_init(void);
 int swap_out(vaddr_t vaddr);
 
 /**
- * @brief Read the page from swapfile at address 'swapfile_offset' and write it into memory at 'vaddr' virtual address
+ * @brief Read the page which virtual address is vaddr from swapfile and write it into memory at 'vaddr' virtual address
  * 
  * @param 'vaddr': virtual address of the page to be written into memory
  * 
@@ -47,13 +47,39 @@ void swap_in(vaddr_t vaddr);
 */
 int find_free_swapfile_entry(vaddr_t vaddr);
 
-
+/**
+ * @brief gets the swapfile entry related to the page which virtual address is vaddr
+ * 
+ * @param 'vaddr': virtual address of the page which entry in the swapfile is required
+ * 
+ * @return entry index or -1 in error
+*/
 int find_swapfile_index(vaddr_t vaddr);
 
-
+/**
+ * @brief frees the specified swapfile entry
+ * 
+ * @param 'entry_index': entry that is required to free
+ * 
+ * @return entry index or -1 in error
+*/
 int free_swapfile_entry(int entry_index);
 
+/**
+ * @brief prints the coremap status of the swapfile
+ *
+ * 
+ * @return void
+*/
 void print_swapfile_coremap_status(void);
+
+/**
+ * @brief resets the swapfile coremap structure
+ * 
+ * 
+ * @return void
+*/
+void reset_swapfile_coremap(void);
 
 
 

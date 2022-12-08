@@ -2,119 +2,107 @@
 #define _VMSTATS_H_
 
 /**
- * @brief
+ * @brief prints the status of the memory
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void print_mem_stats(void);
 
 /**
- * @brief
+ * @brief increments the counter of the TLB faults
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void increment_TLB_faults(void);
 
 /**
- * @brief
+ * @brief increments the counter of the TLB faults that didn't require to replace an entry in the TLB
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void increment_TLB_faults_with_free(void);
 
 /**
- * @brief
+ * @brief increments the counter of the TLB faults that required to replace an entry in the TLB
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void increment_TLB_faults_with_repalce(void);
 
 /**
- * @brief
+ * @brief increments the counter of the times the entire TLB was invalidated (reseted)
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void increment_TLB_invalidations(void);
 
 /**
- * @brief
+ * @brief increments the counter of the number of TLB misses for pages that were already in memory
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void increment_TLB_reloads(void);
 
 /**
- * @brief
+ * @brief increments the counter of the number of TLB misses that required a new page to be zero-filled
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void increment_page_fault_zeroed(void);
 
 /**
- * @brief
+ * @brief increments the counter of the number of TLB misses that required a page to be loaded from disk
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void increment_page_fault_disk(void);
 
 /**
- * @brief
+ * @brief increments the counter of the number of TLB misses that required a page to be loaded from the ELF file
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void increment_page_fault_ELF(void);
 
 /**
- * @brief
+ * @brief increments the counter of the number of page faults that require getting a page from the swap file
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void increment_page_fault_swapfile_get(void);
 
 /**
- * @brief
+ * @brief increments the counter of the number of page fault that required writing a page to the swap file
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void increment_page_fault_swapfile_write(void);
 
 /**
- * @brief
+ * @brief Prints all the virtual memory stats related to page faults and TLB misses
  * 
- * @param
  * 
- * @return
+ * @return void
 */
 void print_vm_stats(void);
 
 /**
- * @brief
- * 
- * @param
- * 
- * @return
+ * @brief Checks the following three conditions:
+ *      - TLB_faults == TLB_faults_with_free + TLB_faults_with_replace 
+ *      - TLB_faults == TLB_reloads + page_fault_disk + page_fault_zeroed
+ *      - page_fault_disk == page_fault_ELF + page_fault_swapfile_get
+ * @return void
 */
 void check_vm_stats(void);
 #endif

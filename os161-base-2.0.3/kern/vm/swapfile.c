@@ -177,3 +177,10 @@ void print_swapfile_coremap_status(){
         kprintf("swapfile_cm.entry_vaddr[%d] = %u, entry_state[%d] = %d\n",i,swapfile_cm.entry_vaddr[i],i,(int)swapfile_cm.entry_state[i]);
     }
 }
+
+void reset_swapfile_coremap(){
+    for(int i = 0 ; i<N_PAGES_SWAPFILE ; i++){
+        swapfile_cm.entry_state[i] = SF_FREE_ENTRY;
+        swapfile_cm.entry_vaddr[i] = 0;
+    }
+}
