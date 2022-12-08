@@ -104,63 +104,72 @@ struct addrspace *proc_getas(void);
 struct addrspace *proc_setas(struct addrspace *);
 
 /**
- * @brief
+ * @brief Sets the program header of the code segment of the current process
  * 
- * @param
+ * @param ph program header of the code segment
  * 
- * @return
+ * @return void
 */
-/* Set the program header of the code segment of the current process. */
 void proc_set_phcode(Elf_Phdr ph);
+
+/**
+ * @brief Gets the program header of the code segment of the current process
+ * 
+ * 
+ * @return code segment's program header
+*/
 Elf_Phdr proc_get_phcode(void);
 
 /**
- * @brief
+ * @brief Sets the program header of the data segment of the current process.
  * 
- * @param
+ * @param ph program header of the code segment
  * 
- * @return
+ * @return void
 */
-/* Set the program header of the data segment of the current process. */
 void proc_set_phdata(Elf_Phdr ph);
 
 /**
- * @brief
+ * @brief Gets the program header of the data segment of the current process
  * 
- * @param
  * 
- * @return
+ * @return data-segment program header
 */
 Elf_Phdr proc_get_phdata(void);
 
 /**
- * @brief
+ * @brief sets program name of the current process
  * 
- * @param
+ * @param progname program name
  * 
- * @return
+ * @return void
 */
 void proc_setprogname(char * progname);
 
 
 /**
- * @brief
+ * @brief gets the program name
  * 
- * @param
  * 
- * @return
+ * @return pointer to program name
 */
 char *proc_getprogname(void);
 
 /**
- * @brief
+ * @brief sets vnode of the current program
  * 
- * @param
+ * @param v vnode structure
  * 
- * @return
+ * @return void
 */
 void proc_set_vnode(struct vnode *v);
 
+/**
+ * @brief gets vnode structure of the current program
+ * 
+ * 
+ * @return vnode structure of the current program
+*/
 struct vnode * proc_get_vnode(void);
 	
 

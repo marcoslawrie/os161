@@ -12,20 +12,22 @@
 #define IS_STACK_PT 3
 
 /**
- * @brief
+ * @brief gets the physical address for a given virtual address and address space
  * 
- * @param
+ * @param faultaddress virtual address
+ * @param as address space in which search the physical address related to faultaddress
  * 
- * @return
+ * @return physical addres associated to faultaddress
 */
-paddr_t getpaddr(vaddr_t faultaddres, struct addrspace *as);
+paddr_t getpaddr(vaddr_t faultaddress, struct addrspace *as);
 
 /**
- * @brief
+ * @brief identifies the page table of the address space to which the virtual address belons to
  * 
- * @param
+ * @param as address space
+ * @param vaddr virtual address
  * 
- * @return
+ * @return code of the page table (CODE_PT = 1, DATA_PT = 2 and STACK_PT = 3)
 */
 int identify_PT(struct addrspace *as, vaddr_t vaddr);
 

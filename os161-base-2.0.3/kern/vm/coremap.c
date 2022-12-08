@@ -20,14 +20,12 @@ static struct spinlock freemem_lock = SPINLOCK_INITIALIZER;
 
 
 
-//struct coremap_struct {
     
-  static unsigned char *freeRamFrames = NULL;
-  static unsigned long *allocSize = NULL;
-  static int *next_allocated = NULL;
-  static int *prev_allocated = NULL;
-//};
-//This two variables are used for 
+static unsigned char *freeRamFrames = NULL;
+static unsigned long *allocSize = NULL;
+static int *next_allocated = NULL;
+static int *prev_allocated = NULL;
+//This two variables are used for swapping purposes 
 static int next_victim = -1;
 static int last_allocated = -1;
 //static coremap_struct _coremap;
@@ -80,7 +78,7 @@ vm_bootstrap(void)
 	for (i=0; i<first_free_addr/PAGE_SIZE; i++) {    
         freeRamFrames[i] = K_PAGE;
         allocSize[i]     = 1; 
-        //Kernel pages cannot be swapped out, with value -1 we mean that they cannot be swapped (they don't point to a next victim). 
+        //Kernel pages cannot be swapped out, the value -1 means that they cannot be swapped out (they don't point to a next victim). 
         next_allocated[i] = -1;  
         prev_allocated[i] = -1;
     }
@@ -189,13 +187,7 @@ paddr_t getppages(unsigned long npages, unsigned char type_of_page, int pt, int 
   return addr;
 }
 
-/*
- * Check if we're in a context that can sleep. While most of the
- * operations in dumbvm don't in fact sleep, in a real VM system many
- * of them would. In those, assert that sleeping is ok. This helps
- * avoid the situation where syscall-layer code that works ok with
- * dumbvm starts blowing up during the VM assignment.
- */
+
 
 
 int freeppages(paddr_t addr, unsigned long npages){
@@ -261,8 +253,6 @@ vm_tlbshootdown(const struct tlbshootdown *ts)
 }
 
 paddr_t get_swapvictim(){
-  //kprintf("Getting next victim\n");
-  //print_coremap_status();
   paddr_t victim = next_victim * PAGE_SIZE;
   int next_victim_aux = next_victim;
 
@@ -276,7 +266,6 @@ paddr_t get_swapvictim(){
     prev_allocated[next_victim_aux] = last_allocated;
     last_allocated = next_victim_aux;
     prev_allocated[next_victim] = 0;
-    //print_coremap_status();
     return victim;    
   }
 }

@@ -36,5 +36,5 @@ sys__exit(int status)
   thread_exit();
 
   panic("thread_exit returned (should not happen)\n");
-  (void) status; // TODO: status handling
+  (void) status;
 }

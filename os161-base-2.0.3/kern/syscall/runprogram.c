@@ -81,11 +81,6 @@ runprogram(char *progname)
 	/* Switch to it and activate it. */
 	proc_setas(as);
 	as_activate();
-	//kprintf("\n");
-	//char *progname2;
-	//progname2 = proc_getprogname();
-	//kprintf("progname in runprogram1 %u:%s\n",(unsigned int)progname,progname);
-	//kprintf("progname in runprogram2 %u:%s\n",(unsigned int)progname2,progname2);
     /* Define the user stack in the address space */
 	result = as_define_stack(as, &stackptr);
 	if (result) {

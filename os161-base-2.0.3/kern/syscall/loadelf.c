@@ -94,6 +94,7 @@ int load_page(vaddr_t faultaddress){
 
 	as = proc_getas();
 	Elf_Phdr ph;   /* "Program header" */
+	//There is one PT for each segment, identifying the PT that the faultaddress belongs to, tell us which segment it belongs to
 	int pt = identify_PT(as,faultaddress);
 	switch (pt){
 		case IS_CODE_PT:
@@ -168,7 +169,7 @@ int load_page(vaddr_t faultaddress){
 
 	(void) u;
 	(void) result;
-	//We have one PT for each segment, identifying the PT that the faultaddress belongs to, tell us which segment it belongs to
+	
 		
 	
 	//Open ELF file

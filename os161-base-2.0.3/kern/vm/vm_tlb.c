@@ -29,8 +29,9 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
-		/* We always create pages read-write, so we can't get this */
-		panic("VM_FAULT_READONLY, system will crash\n");
+		/* Program should not try to write a code page */
+		kprintf("VM_FAULT_READONLY, exiting program\n");
+		sys__exit(0);
 	    case VM_FAULT_READ:
 	    case VM_FAULT_WRITE:
 		break;
@@ -74,7 +75,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 	int pt = identify_PT(as,faultaddress);
 	if(!pt) {
 		kprintf("ERROR: [VM_FAULT] fail when calling identify_pt, faultaddress = %u,as->code_vbase = %u, as->data_vbase = %u\n",faultaddress,as->code_vbase,as->data_vbase);
-		sys__exit(0);
+		panic("Ending program\n");
 	}
 	increment_TLB_faults();
 	vaddr_t stackbase;
@@ -107,9 +108,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 		break;
 	}
 	 /*If page has been swapped we need to call as_prepare_load to obtain a physical 
-	 page to locate the swapped page, it will probably swap out another page */
+	 page to allocate the swapped page, it will probably swap out another page */
 	if(page_swapped){
-		//kprintf("SWAP IN DETECTED\n");
 		increment_page_fault_disk();
 		increment_page_fault_swapfile_get();
 		result = as_prepare_load(as,faultaddress,pt);
@@ -117,15 +117,13 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 			kprintf("PAGE SWAPPED: Problem with as_prepare_load\n");
 		}
 	}else if(page_fault){
-		
 		result = as_prepare_load(as,faultaddress,pt);
 		if(result != 0 ){
 			kprintf("PAGE FAULT: Problem with as_prepare_load\n");
 		}
-		//kprintf("PAGE FAULT! program will end\n");
-		//
-	} else{ /*No page fault, check if swap in is necessary*/
-		//kprintf("vm fault but not PAGE FAULT\n");
+
+	} else{ /*No page fault and no swapping is needed*/
+
 		increment_TLB_reloads();
 		paddr = getpaddr(faultaddress,as) & PAGE_FRAME;
 		if(paddr == 0){
@@ -136,7 +134,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 		update_TLB(faultaddress,paddr);
 		return 0;
 	}
-    //paddr = getpaddr(faultaddress,as);
 	//Once we allocate the page in memory we read obtain the physical address to update the TLB
 	switch (pt)
 	{
@@ -162,8 +159,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress){
 	if(result != 0){
 		kprintf("Warning: TLB not updated");
 	}
-	/*Zeroing the page in memory to write the new page
-	This new page can come from ELF file or from SWAPFILE*/
 
 	
 	if(page_swapped){
@@ -234,12 +229,11 @@ int update_TLB(uint32_t vaddr,uint32_t paddr) {
 	int tlb_entry_index;
 	/* Disable interrupts on this CPU while frobbing the TLB. */
 	spl = splhigh();
-	//increment_TLB_faults();
 	tlb_entry_index = get_free_TLB_entry();
 	//Check if there is a free entry in the TLB
 	if(tlb_entry_index >= 0) {
 		increment_TLB_faults_with_free();
-		paddr = (paddr & PAGE_FRAME) | TLBLO_DIRTY | TLBLO_VALID; //Check if the masks are correct later. Some pages might not be writable 
+		paddr = (paddr & PAGE_FRAME) | TLBLO_DIRTY | TLBLO_VALID; 
 		tlb_write(vaddr, paddr, tlb_entry_index);
 		splx(spl);
 		return 0;
@@ -249,15 +243,13 @@ int update_TLB(uint32_t vaddr,uint32_t paddr) {
 	tlb_entry_index = tlb_get_rr_victim();
 	if(tlb_entry_index >= 0) {
 		increment_TLB_faults_with_repalce();
-		paddr = paddr | TLBLO_DIRTY | TLBLO_VALID; //Check if the masks are correct later. Some pages might not be writable 
+		paddr = paddr | TLBLO_DIRTY | TLBLO_VALID; 
 		tlb_write(vaddr, paddr, tlb_entry_index);
 		splx(spl);
 		return 0;
 	}
 	
-	/* For debug purpose */
-	return 0;
-	kprintf("Problem while updating the TLB\n");
+	kprintf("WARNING: [UPDATE_TLB] Problem while updating the TLB\n");
 	splx(spl);
 	return EFAULT;
 
@@ -294,7 +286,6 @@ int clear_valid_bit_TLB(uint32_t vaddr) {
 			}
 			else
 			{
-				//kprintf("Warning:[clear_valid_bit_TLB] failure while searching the entry in the TLB, TLB index: %d\n",tlb_index);
 				return EFAULT;
 			}
 }
